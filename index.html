@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>未回診名單比對工具</title>
+  
+  <!-- 網頁頁籤與手機主畫面圖示設定 -->
+  <link rel="icon" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
+  <meta name="apple-mobile-web-app-title" content="未回診比對">
+  
+  <!-- 載入處理 Excel 的套件 -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; max-width: 780px; margin: 40px auto; padding: 25px; background: #f7f8fa; color: #333; }
+    .card { background: #fff; padding: 25px 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eef0f4; padding-bottom: 12px; margin-bottom: 20px; }
+    h2 { margin: 0; color: #2c3e50; font-size: 20px; }
+    .reset-btn { background: #edf2f7; color: #4a5568; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; width: auto; transition: 0.2s; }
+    .reset-btn:hover { background: #e2e8f0; color: #2d3748; }
+    
+    /* 左右並排上傳區 */
+    .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+    .group { display: flex; flex-direction: column; min-width: 0; }
+    label { font-weight: bold; display: block; margin-bottom: 8px; font-size: 14.5px; color: #2d3748; }
+    
+    .drop-zone { position: relative; border: 2px dashed #b0b8c4; border-radius: 8px; background: #fafbfc; padding: 26px 14px; text-align: center; transition: 0.2s; cursor: pointer; }
+    .drop-zone:hover, .drop-zone.dragover { border-color: #2b6cb0; background: #ebf8ff; }
+    .drop-zone input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .drop-hint { color: #5a6578; font-size: 14px; pointer-events: none; }
+    .file-list { margin-top: 10px; text-align: left; font-size: 13.5px; color: #2d3748; line-height: 1.6; background: #edf2f7; padding: 8px 12px; border-radius: 6px; display: none; word-break: break-all; }
+
+    #submitBtn { background: #2b6cb0; color: #fff; border: none; padding: 13px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; transition: all 0.25s ease; }
+    #submitBtn:hover { background: #2c5282; }
+    #submitBtn.success { background: #2f855a; animation: pop 0.4s ease; }
+    #submitBtn.error { background: #c53030; }
+    
+    @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+    #log { margin-top: 20px; display: none; }
+    .status-msg { padding: 14px 16px; border-radius: 6px; background: #edf2f7; font-size: 14px; }
+    .error-msg { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
+    
+    /* 結果統計表格與水平對齊樣式 */
+    .result-title { font-weight: bold; color: #2f855a; margin-bottom: 10px; font-size: 15px; }
+    .summary-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 14px; background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+    .summary-table th, .summary-table td { border: 1px solid #e2e8f0; padding: 11px 14px; text-align: center; vertical-align: middle; }
+    .summary-table th { background: #edf2f7; color: #2d3748; font-weight: bold; width: 42%; }
+    .summary-table th:first-child { width: 16%; background: #e2e8f0; }
+    .summary-table td.row-label { background: #f8fafc; font-weight: bold; color: #4a5568; text-align: left; white-space: nowrap; }
+    
+    .summary-table td.raw-files-cell { text-align: left; vertical-align: top; line-height: 1.6; border-bottom: none; padding-bottom: 6px; }
+    .summary-table td.raw-total-cell { border-top: none; padding-top: 0; vertical-align: bottom; }
+    
+    .file-breakdown { font-size: 13px; color: #5a6578; }
+    .file-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; white-space: nowrap; }
+    .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-count { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    .raw-total { display: flex; justify-content: space-between; font-weight: bold; color: #2d3748; border-top: 1px dashed #cbd5e0; padding-top: 8px; white-space: nowrap; }
+    
+    .summary-table tr.final-row td { background: #f0fff4; font-weight: bold; font-size: 15px; color: #276749; }
+    .summary-table tr.final-row td.row-label { background: #f0fff4; color: #276749; }
+
+    /* 未回診獨立呈現卡片 */
+    .missing-banner { margin-top: 14px; padding: 14px 20px; border-radius: 8px; background: #fff5f5; border: 1px solid #feb2b2; display: flex; justify-content: space-between; align-items: center; }
+    .missing-banner .title { font-weight: bold; color: #9b2c2c; font-size: 15.5px; }
+    .missing-banner .count { font-weight: bold; color: #c53030; font-size: 20px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header-bar">
+      <h2>收案「未回診名單」自動比對工具</h2>
+      <button type="button" class="reset-btn" onclick="resetAll()">🔄 清空重選</button>
+    </div>
+    
+    <div class="upload-grid">
+      <div class="group">
+        <label>1. 選擇「收案」檔（可選多個）：</label>
+        <div class="drop-zone" id="caseZone">
+          <div class="drop-hint">點擊選擇檔案 或 直接拖曳</div>
+          <input type="file" id="caseFiles" multiple accept=".xls,.xlsx,.csv" onchange="updateFileList('caseFiles', 'caseFileList')">
+        </div>
+        <div class="file-list" id="caseFileList"></div>
+      </div>
+
+      <div class="group">
+        <label>2. 選擇「已回診」檔（可選多個）：</label>
+        <div class="drop-zone" id="returnZone">
+          <div class="drop-hint">點擊選擇檔案 或 直接拖曳</div>
+          <input type="file" id="returnFiles" multiple accept=".xls,.xlsx,.csv" onchange="updateFileList('returnFiles', 'returnFileList')">
+        </div>
+        <div class="file-list" id="returnFileList"></div>
+      </div>
+    </div>
+
+    <button id="submitBtn" onclick="processFiles()"> 開始比對並下載「未回診名單」 </button>
+    <div id="log"></div>
+  </div>
+
+  <script>
+    ['caseZone', 'returnZone'].forEach(zoneId => {
+      const zone = document.getElementById(zoneId);
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+      zone.addEventListener('drop', () => zone.classList.remove('dragover'));
+    });
+
+    // 檢查並過濾非 Excel 檔案
+    function updateFileList(inputId, listId) {
+      const inputEl = document.getElementById(inputId);
+      const listEl = document.getElementById(listId);
+      const btn = document.getElementById('submitBtn');
+      const logEl = document.getElementById('log');
+
+      btn.classList.remove('success', 'error');
+      btn.innerText = '開始比對並下載「未回診名單」';
+      logEl.style.display = 'none';
+      logEl.innerHTML = '';
+
+      const rawFiles = Array.from(inputEl.files);
+      const validExts = ['.xls', '.xlsx', '.csv'];
+      const validFiles = [];
+      let hasInvalid = false;
+
+      rawFiles.forEach(file => {
+        const lowerName = file.name.toLowerCase();
+        if (validExts.some(ext => lowerName.endsWith(ext))) {
+          validFiles.push(file);
+        } else {
+          hasInvalid = true;
+        }
+      });
+
+      // 若有誤拉非 Excel 檔，自動剔除並顯示簡潔提示
+      if (hasInvalid) {
+        const dt = new DataTransfer();
+        validFiles.forEach(f => dt.items.add(f));
+        inputEl.files = dt.files;
+        logEl.style.display = 'block';
+        logEl.innerHTML = `<div class="status-msg error-msg">⚠️ 僅支援 .xls, .xlsx, .csv 檔案格式</div>`;
+      }
+
+      if (!validFiles.length) {
+        listEl.style.display = 'none';
+        listEl.innerText = '';
+        return;
+      }
+      listEl.style.display = 'block';
+      listEl.innerText = validFiles.map(f => f.name).join('\n');
+    }
+
+    function resetAll() {
+      document.getElementById('caseFiles').value = '';
+      document.getElementById('returnFiles').value = '';
+      document.getElementById('caseFileList').style.display = 'none';
+      document.getElementById('caseFileList').innerText = '';
+      document.getElementById('returnFileList').style.display = 'none';
+      document.getElementById('returnFileList').innerText = '';
+      document.getElementById('log').style.display = 'none';
+      document.getElementById('log').innerHTML = '';
+      const btn = document.getElementById('submitBtn');
+      btn.classList.remove('success', 'error');
+      btn.innerText = '開始比對並下載「未回診名單」';
+    }
+
+    function readExcel(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array', raw: false });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+            resolve({ name: file.name, rows });
+          } catch (err) {
+            reject(new Error(`解析檔案 [${file.name}] 失敗，可能是檔案損毀或格式不符。`));
+          }
+        };
+        reader.onerror = () => reject(new Error(`讀取檔案 [${file.name}] 失敗。`));
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    function detectIdColumn(rows) {
+      for (let r = 0; r < Math.min(15, rows.length); r++) {
+        const row = rows[r];
+        if (!row) continue;
+        for (let c = 0; c < row.length; c++) {
+          const cellText = String(row[c] || "").replace(/\s+/g, "");
+          if (cellText.includes("身份証") || cellText.includes("身份證") || cellText.includes("身分證") || cellText.includes("身分証")) {
+            return { headerRowIndex: r, idCol: c };
+          }
+        }
+      }
+      return null;
+    }
+
+    function getTimestamp() {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const hh = String(now.getHours()).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+      return `${yyyy}${mm}${dd}${hh}${min}`;
+    }
+
+    function formatFileRow(fileName, count) {
+      const shortName = fileName.replace(/\.[^/.]+$/, "");
+      return `<div class="file-item" title="${fileName}"><span class="file-name">${shortName}</span><span class="file-count">${count} 筆</span></div>`;
+    }
+
+    async function processFiles() {
+      const caseInput = document.getElementById('caseFiles').files;
+      const returnInput = document.getElementById('returnFiles').files;
+      const logEl = document.getElementById('log');
+      const btn = document.getElementById('submitBtn');
+      logEl.style.display = 'block';
+
+      if (!caseInput.length || !returnInput.length) {
+        logEl.innerHTML = `<div class="status-msg">⚠️ 請先選擇「收案」檔與「已回診」檔！</div>`;
+        return;
+      }
+
+      btn.classList.remove('success', 'error');
+      btn.innerText = "⏳ 資料比對處理中...";
+      logEl.innerHTML = `<div class="status-msg">⏳ 資料讀取與比對中...</div>`;
+
+      if (typeof XLSX === 'undefined') {
+        btn.classList.add('error');
+        btn.innerText = "❌ 執行失敗";
+        logEl.innerHTML = `<div class="status-msg error-msg">❌ <b>嚴重錯誤：</b><br>無法載入核心處理套件 (SheetJS)。<br>請確認電腦已連上網路，並<b>暫時關閉 Safari 或 Chrome 的「阻擋廣告/追蹤」擴充功能</b>後重新整理網頁。</div>`;
+        return;
+      }
+
+      try {
+        const returnIds = new Set();
+        let returnRawCount = 0;
+        let returnDuplicateCount = 0;
+        const returnFileBreakdown = [];
+
+        for (const file of returnInput) {
+          const returnData = await readExcel(file);
+          const returnMeta = detectIdColumn(returnData.rows);
+          if (!returnMeta) {
+            throw new Error(`在已回診檔案 (${returnData.name}) 中找不到「身份證」標題欄，請確認檔案格式！`);
+          }
+          let thisReturnCount = 0;
+          for (let i = returnMeta.headerRowIndex + 1; i < returnData.rows.length; i++) {
+            const row = returnData.rows[i];
+            if (!row) continue;
+            const idNo = String(row[returnMeta.idCol] || "").trim().toUpperCase();
+            if (!idNo) continue;
+
+            thisReturnCount++;
+            returnRawCount++;
+            if (returnIds.has(idNo)) {
+              returnDuplicateCount++;
+            } else {
+              returnIds.add(idNo);
+            }
+          }
+          returnFileBreakdown.push(formatFileRow(file.name, thisReturnCount));
+        }
+
+        let headerRow = null;
+        const caseMap = new Map();
+        let rawRowCount = 0;
+        let duplicateCount = 0;
+        const caseFileBreakdown = [];
+
+        for (const file of caseInput) {
+          const fileData = await readExcel(file);
+          const rows = fileData.rows;
+          const meta = detectIdColumn(rows);
+
+          if (!meta) {
+            throw new Error(`在收案檔案 (${file.name}) 中找不到「身份証」標題欄！`);
+          }
+
+          let categoryInfo = file.name.replace(/\.[^/.]+$/, "");
+          for (let r = 0; r < meta.headerRowIndex; r++) {
+            const text = String(rows[r][0] || "").trim();
+            if (text.includes("個案類別") || text.includes("方案")) {
+              categoryInfo = text;
+              break;
+            }
+          }
+
+          if (!headerRow) {
+            headerRow = ["來源檔案/類別", ...rows[meta.headerRowIndex]];
+          }
+
+          let thisFileCount = 0;
+          for (let i = meta.headerRowIndex + 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row) continue;
+            const idNo = String(row[meta.idCol] || "").trim().toUpperCase();
+            if (!idNo) continue;
+
+            thisFileCount++;
+            rawRowCount++;
+
+            if (caseMap.has(idNo)) {
+              duplicateCount++;
+              caseMap.get(idNo).categories.add(categoryInfo);
+            } else {
+              caseMap.set(idNo, {
+                categories: new Set([categoryInfo]),
+                rowData: row
+              });
+            }
+          }
+          caseFileBreakdown.push(formatFileRow(file.name, thisFileCount));
+        }
+
+        const missingCases = [];
+        for (const [idNo, item] of caseMap.entries()) {
+          if (!returnIds.has(idNo)) {
+            const combinedCategory = Array.from(item.categories).join(" ＋ ");
+            missingCases.push([combinedCategory, ...item.rowData]);
+          }
+        }
+
+        const outFileName = `未回診名單_${getTimestamp()}.xlsx`;
+        const outSheet = XLSX.utils.aoa_to_sheet([headerRow, ...missingCases]);
+        const outWb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(outWb, outSheet, "未回診名單");
+        
+        XLSX.writeFile(outWb, outFileName);
+
+        btn.classList.add('success');
+        btn.innerText = `✓ 已完成（請至「下載」資料夾查看檔案）`;
+
+        logEl.innerHTML = `
+          <div class="result-title">✅ 比對完成！統計結果如下：</div>
+          <table class="summary-table">
+            <thead><tr><th>項目</th><th>收案</th><th>已回診</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="row-label" rowspan="2">原始筆數</td>
+                <td class="raw-files-cell"><div class="file-breakdown">${caseFileBreakdown.join('')}</div></td>
+                <td class="raw-files-cell"><div class="file-breakdown">${returnFileBreakdown.join('')}</div></td>
+              </tr>
+              <tr>
+                <td class="raw-total-cell"><div class="raw-total"><span>總計</span><span>${rawRowCount} 筆</span></div></td>
+                <td class="raw-total-cell"><div class="raw-total"><span>總計</span><span>${returnRawCount} 筆</span></div></td>
+              </tr>
+              <tr>
+                <td class="row-label">身分證重複</td>
+                <td>${duplicateCount} 筆</td>
+                <td>${returnDuplicateCount} 筆</td>
+              </tr>
+              <tr class="final-row">
+                <td class="row-label">實際人數</td>
+                <td>${caseMap.size} 人</td>
+                <td>${returnIds.size} 人</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="missing-banner">
+            <span class="title">📌 未回診（需追蹤人數）</span>
+            <span class="count">${missingCases.length} 人</span>
+          </div>
+        `;
+      } catch (error) {
+        btn.classList.add('error');
+        btn.innerText = "❌ 發生錯誤，請看下方說明";
+        logEl.innerHTML = `<div class="status-msg error-msg">❌ <b>處理過程中發生錯誤：</b><br>${error.message}</div>`;
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>
