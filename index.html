@@ -115,8 +115,8 @@
       💡 <b>檔案儲存與分享說明：</b><br>
       • <b>電腦端：</b>自動存入「下載」資料夾<br>
       • <b>手機端：</b>兩種狀況<br>
-         「下載提示」➡️ 「下載」➡️ 網址列「↓」➡️ 分享<br>
-         「白底在Excel中打開」➡️ 點擊「更多...」<br>
+         遇到「下載提示」➡️ 「下載」➡️ 網址列「↓」➡️ 分享<br>
+         遇到「白底在Excel中打開」➡️ 點擊「更多...」<br>
          👉 <b>可傳至「LINE」或「儲存到檔案」</b>
     </div>
 
@@ -391,11 +391,22 @@
             <span class="count">${missingCases.length} 人</span>
           </div>
         `;
+        
+        // 【新增】自動平滑捲動到結果區塊
+        setTimeout(() => {
+          logEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+
       } catch (error) {
         btn.classList.add('error');
         btn.innerText = "❌ 發生錯誤，請看下方說明";
         logEl.innerHTML = `<div class="status-msg error-msg">❌ <b>處理過程中發生錯誤：</b><br>${error.message}</div>`;
         console.error(error);
+        
+        // 【新增】發生錯誤時，也會自動捲動到錯誤提示區
+        setTimeout(() => {
+          logEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
       }
     }
   </script>
