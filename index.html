@@ -75,11 +75,11 @@
       .desktop-hint { display: none; }
       .missing-banner { flex-direction: column; gap: 8px; text-align: center; }
       
-      /* 【新增修正】手機版表格防溢出：解除寬度限制、縮減留白、允許標題文字換行 */
+      /* 【修正點】：將第一欄寬度縮減回 20%，縮小內留白，並允許中文字自然換行 */
       .summary-table { min-width: 100%; font-size: 13px; }
-      .summary-table th, .summary-table td { padding: 8px 5px; }
-      .summary-table th:first-child { width: 28%; }
-      .summary-table td.row-label { white-space: normal; word-break: keep-all; line-height: 1.4; }
+      .summary-table th, .summary-table td { padding: 8px 4px; }
+      .summary-table th:first-child { width: 20%; }
+      .summary-table td.row-label { white-space: normal; word-break: normal; line-height: 1.4; }
     }
   </style>
 </head>
@@ -115,8 +115,8 @@
       💡 <b>檔案儲存與分享說明：</b><br>
       • <b>電腦端：</b>自動存入「下載」資料夾<br>
       • <b>手機端：</b>兩種狀況<br>
-         遇到「下載提示」➡️ 「下載」➡️ 網址列「↓」➡️ 分享<br>
-         遇到「白底在Excel中打開」➡️ 點擊「更多...」<br>
+         「下載提示」➡️ 「下載」➡️ 網址列「↓」➡️ 分享<br>
+         「白底在Excel中打開」➡️ 點擊「更多...」<br>
          👉 <b>可傳至「LINE」或「儲存到檔案」</b>
     </div>
 
