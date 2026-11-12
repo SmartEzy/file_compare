@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>未回診比對工具</title>
+  <title>未回診名單比對工具</title>
   
   <link rel="icon" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
@@ -39,7 +39,7 @@
     #log { margin-top: 20px; display: none; }
     .status-msg { padding: 14px 16px; border-radius: 6px; background: #edf2f7; font-size: 14.5px; line-height: 1.6; }
     .error-msg { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
-    .info-msg { background: #ebf8ff; color: #2c5282; border: 1px solid #bee3f8; margin-bottom: 15px; }
+    .info-msg { background: #ebf8ff; color: #2c5282; border: 1px solid #bee3f8; margin-bottom: 20px; }
     
     .result-title { font-weight: bold; color: #2f855a; margin-bottom: 10px; font-size: 15px; }
     .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; }
@@ -102,6 +102,16 @@
         </div>
         <div class="file-list" id="returnFileList"></div>
       </div>
+    </div>
+
+    <!-- 【新增】將操作說明常駐在按鈕上方，確保預覽模式前就能看見 -->
+    <div class="status-msg info-msg">
+      💡 <b>檔案儲存與分享說明：</b><br>
+      • <b>電腦端：</b>檔案已自動存入「下載」資料夾。<br>
+      • <b>手機端：</b>按下比對後，依系統不同會出現以下兩種畫面：<br>
+         遇到「彈出下載提示」➡️ 點選「下載」➡️ 點擊網址列「↓」➡️ 分享<br>
+         遇到「白底大圖」➡️ 點擊畫面上的「更多...」（或分享圖示）<br>
+         👉 <b>即可直接傳至「LINE」或「儲存到檔案」</b>
     </div>
 
     <button id="submitBtn" onclick="processFiles()"> 開始比對並下載「未回診名單」 </button>
@@ -342,16 +352,8 @@
         btn.classList.add('success');
         btn.innerText = `✓ 比對完成並已下載檔案`;
 
-        // 【修改點】針對手機版的下載分享動線更新文字說明
+        // 【修改點】將說明文字移到常駐介面後，這裡只需顯示純粹的「統計表格」
         logEl.innerHTML = `
-          <div class="status-msg info-msg">
-            💡 <b>檔案儲存與分享說明：</b><br>
-            • <b>電腦端：</b>已自動存入「下載」資料夾。<br>
-            • <b>手機端：</b><br>
-               遇到「彈出下載提示」➡️ 點選「下載」➡️ 點擊網址列「↓」➡️ 分享<br>
-               遇到「白底大圖」➡️ 點擊「更多...」（或分享圖示）<br>
-               👉 <b>即可直接傳至「LINE」或「儲存到檔案」</b>
-          </div>
           <div class="result-title">✅ 統計結果如下：</div>
           <div class="table-wrapper">
             <table class="summary-table">
