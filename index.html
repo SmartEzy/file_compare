@@ -11,6 +11,9 @@
   
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <style>
+    /* 【新增】確保所有元素的寬高計算都包含 padding 與 border，防止撐破版面 */
+    * { box-sizing: border-box; }
+
     body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; max-width: 780px; margin: 40px auto; padding: 20px; background: #f7f8fa; color: #333; }
     .card { background: #fff; padding: 25px 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
     .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eef0f4; padding-bottom: 12px; margin-bottom: 20px; }
@@ -64,32 +67,37 @@
     .missing-banner .title { font-weight: bold; color: #9b2c2c; font-size: 16px; }
     .missing-banner .count { font-weight: bold; color: #c53030; font-size: 22px; }
 
-    /* ================= 新增：彈出式對話框樣式 ================= */
+    /* ================= 彈出式對話框樣式（含防溢出修正） ================= */
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center; padding: 16px;
+      background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center;
       animation: fadeIn 0.2s ease;
     }
     .modal-box {
-      background: #fff; width: 100%; max-width: 550px; border-radius: 12px; overflow: hidden;
+      background: #fff; 
+      width: 92%; /* 【修正】改為 92% 留出左右安全邊距 */
+      max-width: 500px; 
+      max-height: 90vh; /* 防止對話框太高超出螢幕 */
+      border-radius: 12px; 
+      display: flex; flex-direction: column;
       box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     }
-    .modal-header { background: #ebf8ff; padding: 16px 20px; font-weight: bold; color: #2c5282; font-size: 16px; border-bottom: 1px solid #bee3f8; display: flex; align-items: center; gap: 8px; }
-    .modal-body { padding: 20px; }
+    .modal-header { background: #ebf8ff; padding: 16px 20px; font-weight: bold; color: #2c5282; font-size: 16px; border-bottom: 1px solid #bee3f8; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .modal-body { padding: 20px; overflow-y: auto; }
     
-    /* 上下排版設定 */
+    /* 【修正】上電腦、下手機 的單欄排版 */
     .modal-grid { display: flex; flex-direction: column; gap: 12px; }
     .modal-col { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; }
     .col-title { font-weight: bold; color: #2d3748; font-size: 15px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #e2e8f0; display: flex; align-items: center; gap: 6px; }
     
-    /* 手機說明卡片化設計 */
     .step-text { font-size: 13.5px; color: #4a5568; line-height: 1.5; margin-bottom: 8px; }
     .ios-card { background: #fff; border: 1px solid #cbd5e0; border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 13px; line-height: 1.6; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
     .ios-card b { color: #2d3748; font-size: 13.5px; display: block; margin-bottom: 3px; }
+    /* 【修正】改為藍字重點強調 */
     .highlight-action { color: #2b6cb0; font-weight: bold; }
     .final-tip { font-weight: bold; color: #2b6cb0; font-size: 13.5px; margin-top: 10px; }
 
-    .modal-footer { padding: 14px 20px; background: #f7f8fa; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; }
+    .modal-footer { padding: 14px 20px; background: #f7f8fa; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
     .btn-cancel { background: #edf2f7; color: #4a5568; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; font-size: 14.5px; cursor: pointer; transition: 0.2s; }
     .btn-cancel:hover { background: #e2e8f0; }
     .btn-confirm { background: #2f855a; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 14.5px; cursor: pointer; transition: 0.2s; }
@@ -112,8 +120,6 @@
       .summary-table th:first-child { width: 20%; }
       .summary-table td.row-label { white-space: normal; word-break: normal; line-height: 1.4; }
       
-      /* 在極小螢幕上微調對話框左右欄間距 */
-      .modal-grid { gap: 8px; }
       .modal-col { padding: 10px; }
       .col-title { font-size: 14px; }
       .ios-card { padding: 8px; font-size: 12.5px; }
@@ -152,20 +158,20 @@
     <div id="log"></div>
   </div>
 
-  <!-- 【新增】按鈕點擊後彈出的確認對話框 -->
+  <!-- 按鈕點擊後彈出的確認對話框 -->
   <div class="modal-overlay" id="confirmModal">
     <div class="modal-box">
       <div class="modal-header">💡 檔案儲存與分享說明</div>
       <div class="modal-body">
         <div class="modal-grid">
-          <!-- 左欄：電腦端 -->
+          <!-- 上半部：電腦端 -->
           <div class="modal-col">
             <div class="col-title">💻 電腦端</div>
             <div class="step-text">
               比對完成後，檔案將會<br><b>自動存入「下載」資料夾</b>。
             </div>
           </div>
-          <!-- 右欄：手機端 -->
+          <!-- 下半部：手機端 -->
           <div class="modal-col">
             <div class="col-title">📱 手機 / 平板端</div>
             <div class="step-text">將出現 <b>(1)</b> 或 <b>(2)</b> 兩種狀況：</div>
@@ -255,19 +261,17 @@
       btn.innerText = '開始比對並下載「未回診名單」';
     }
 
-    /* ================= 新增：對話框控制函數 ================= */
+    /* ================= 對話框控制函數 ================= */
     function openConfirmModal() {
       const caseInput = document.getElementById('caseFiles').files;
       const returnInput = document.getElementById('returnFiles').files;
       const logEl = document.getElementById('log');
       
-      // 若尚未選擇檔案，直接顯示錯誤，不跳出對話框
       if (!caseInput.length || !returnInput.length) {
         logEl.style.display = 'block';
         logEl.innerHTML = `<div class="status-msg error-msg">⚠️ 請先選擇「收案」檔與「已回診」檔！</div>`;
         return;
       }
-      // 開啟對話框
       document.getElementById('confirmModal').style.display = 'flex';
     }
 
@@ -325,7 +329,6 @@
     }
 
     async function processFiles() {
-      // 點擊「確定」後，先關閉對話框
       closeConfirmModal();
 
       const caseInput = document.getElementById('caseFiles').files;
@@ -478,7 +481,6 @@
           </div>
         `;
         
-        // 自動平滑捲動到結果區塊
         setTimeout(() => {
           logEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
