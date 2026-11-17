@@ -77,8 +77,8 @@
     .modal-header { background: #ebf8ff; padding: 16px 20px; font-weight: bold; color: #2c5282; font-size: 16px; border-bottom: 1px solid #bee3f8; display: flex; align-items: center; gap: 8px; }
     .modal-body { padding: 20px; }
     
-    /* 左右雙欄排版設定 */
-    .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    /* 上下排版設定 */
+    .modal-grid { display: flex; flex-direction: column; gap: 12px; }
     .modal-col { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; }
     .col-title { font-weight: bold; color: #2d3748; font-size: 15px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #e2e8f0; display: flex; align-items: center; gap: 6px; }
     
@@ -162,7 +162,7 @@
           <div class="modal-col">
             <div class="col-title">💻 電腦端</div>
             <div class="step-text">
-              比對完成後，名單檔案將會<br><b>自動存入「下載」資料夾</b>。
+              比對完成後，檔案將會<br><b>自動存入「下載」資料夾</b>。
             </div>
           </div>
           <!-- 右欄：手機端 -->
