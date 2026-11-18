@@ -30,7 +30,6 @@
     .drop-hint { color: #5a6578; font-size: 14.5px; font-weight: bold; pointer-events: none; }
     .desktop-hint { display: block; font-size: 12.5px; color: #8a94a5; margin-top: 6px; font-weight: normal; }
     
-    /* 【優化 1】檔案清單卡片化呈現 */
     .file-list { margin-top: 12px; display: none; flex-direction: column; gap: 8px; }
     .file-badge { background: #f1f5f9; border-left: 4px solid #3b82f6; padding: 10px 12px; border-radius: 6px; font-size: 13.5px; color: #1e293b; font-weight: bold; display: flex; align-items: center; gap: 8px; word-break: break-all; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
@@ -69,43 +68,47 @@
     .missing-banner .title { font-weight: bold; color: #9b2c2c; font-size: 16px; }
     .missing-banner .count { font-weight: bold; color: #c53030; font-size: 22px; }
 
-    /* ================= 【優化 2】彈出式對話框 - 專業深色模式 ================= */
+    /* ================= 彈出式對話框 - 明亮高對比模式 ================= */
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.75); z-index: 9999; justify-content: center; align-items: center;
+      background: rgba(0,0,0,0.65); z-index: 9999; justify-content: center; align-items: center;
       animation: fadeIn 0.2s ease;
     }
     .modal-box {
-      background: #1e293b; /* 深夜藍底色 */
+      background: #ffffff;
       width: 92%; max-width: 520px; max-height: 90vh; 
       border-radius: 12px; display: flex; flex-direction: column;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
     }
-    .modal-header { background: #0f172a; padding: 16px 20px; font-weight: bold; color: #e2e8f0; font-size: 16px; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 8px; flex-shrink: 0; border-radius: 12px 12px 0 0; }
+    .modal-header { background: #ebf8ff; padding: 16px 20px; font-weight: bold; color: #2c5282; font-size: 16px; border-bottom: 1px solid #bee3f8; display: flex; align-items: center; gap: 8px; flex-shrink: 0; border-radius: 12px 12px 0 0; }
     .modal-body { padding: 20px; overflow-y: auto; }
     
-    .modal-grid { display: flex; flex-direction: column; gap: 14px; }
-    .modal-col { background: #334155; border: 2px solid transparent; border-radius: 8px; padding: 16px; transition: all 0.3s ease; }
-    .col-title { font-weight: bold; color: #f8fafc; font-size: 15px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #475569; display: flex; align-items: center; justify-content: space-between; }
+    .modal-grid { display: flex; flex-direction: column; gap: 16px; }
+    .modal-col { border-radius: 8px; padding: 16px; transition: all 0.3s ease; }
+    .col-title { font-weight: bold; font-size: 15px; margin-bottom: 10px; padding-bottom: 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; }
     
-    .step-text { font-size: 13.5px; color: #cbd5e1; line-height: 1.6; margin-bottom: 8px; }
-    .ios-card { background: #1e293b; border: 1px solid #475569; border-radius: 6px; padding: 12px; margin-bottom: 10px; font-size: 13px; line-height: 1.6; color: #cbd5e1; }
-    .ios-card b { color: #f8fafc; font-size: 14px; display: block; margin-bottom: 4px; }
+    .step-text { font-size: 13.5px; line-height: 1.6; margin-bottom: 8px; }
+    .ios-card { background: #fff; border: 1px solid #cbd5e0; border-radius: 6px; padding: 12px; margin-bottom: 10px; font-size: 13px; line-height: 1.6; color: #4a5568; }
+    .ios-card b { color: #2d3748; font-size: 14px; display: block; margin-bottom: 4px; }
     
-    /* 藍字重點 */
-    .highlight-action { color: #60a5fa; font-weight: bold; }
-    .final-tip { font-weight: bold; color: #93c5fd; font-size: 14px; margin-top: 12px; background: #0f172a; padding: 10px; border-radius: 6px; text-align: center; border: 1px dashed #475569; }
+    .highlight-action { color: #2b6cb0; font-weight: bold; }
+    .final-tip { font-weight: bold; color: #2b6cb0; font-size: 14px; margin-top: 12px; background: #ebf8ff; padding: 10px; border-radius: 6px; text-align: center; border: 1px dashed #bee3f8; }
 
-    /* 【優化 3】裝置動態高光設定 */
-    .device-active { border-color: #3b82f6; background: #1e293b; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
-    .device-inactive { opacity: 0.5; filter: grayscale(50%); }
-    .current-badge { background: #3b82f6; color: #fff; font-size: 12px; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
+    /* 裝置動態高光設定（明亮版） */
+    .device-active { border: 2px solid #3b82f6; background: #f0f7ff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15); }
+    .device-active .col-title { color: #1e3a8a; border-bottom-color: #bfdbfe; }
+    .device-active .step-text { color: #334155; }
+    
+    .device-inactive { border: 2px solid #e2e8f0; background: #f8fafc; opacity: 0.55; filter: grayscale(100%); }
+    .device-inactive .col-title { color: #64748b; }
+    
+    .current-badge { background: #3b82f6; color: #fff; font-size: 12px; padding: 4px 8px; border-radius: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); }
 
-    .modal-footer { padding: 14px 20px; background: #0f172a; border-top: 1px solid #334155; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; flex-shrink: 0; border-radius: 0 0 12px 12px; }
-    .btn-cancel { background: #334155; color: #e2e8f0; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; font-size: 14.5px; cursor: pointer; transition: 0.2s; }
-    .btn-cancel:hover { background: #475569; }
-    .btn-confirm { background: #3b82f6; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 14.5px; cursor: pointer; transition: 0.2s; }
-    .btn-confirm:hover { background: #2563eb; }
+    .modal-footer { padding: 14px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; flex-shrink: 0; border-radius: 0 0 12px 12px; }
+    .btn-cancel { background: #edf2f7; color: #4a5568; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; font-size: 14.5px; cursor: pointer; transition: 0.2s; }
+    .btn-cancel:hover { background: #e2e8f0; }
+    .btn-confirm { background: #2f855a; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 14.5px; cursor: pointer; transition: 0.2s; }
+    .btn-confirm:hover { background: #276749; }
     
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -161,7 +164,7 @@
     <div id="log"></div>
   </div>
 
-  <!-- 深色模式確認對話框 -->
+  <!-- 明亮高對比：確認對話框 -->
   <div class="modal-overlay" id="confirmModal">
     <div class="modal-box">
       <div class="modal-header">💡 檔案儲存與分享說明</div>
@@ -185,7 +188,6 @@
               <b>(1) 出現「下載提示」</b>
               ➔ 點擊 <span class="highlight-action">下載</span> 
               ➔ 網址列 
-              <!-- 【優化 4】SVG 繪製的 Safari 下載圖示 -->
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: text-bottom; margin: 0 2px;">
                 <circle cx="12" cy="12" r="12" fill="#007AFF"/>
                 <path d="M12 17.5L6.5 12H10V5.5H14V12H17.5L12 17.5Z" fill="white"/>
@@ -257,7 +259,6 @@
         return;
       }
       
-      // 【套用優化 1】將上傳的檔案渲染成帶有 icon 的卡片 Badge
       listEl.style.display = 'flex';
       listEl.innerHTML = validFiles.map(f => `<div class="file-badge">📄 ${f.name}</div>`).join('');
     }
@@ -288,7 +289,7 @@
         return;
       }
       
-      // 【套用優化 3】自動偵測裝置並調整 UI 高光
+      // 自動偵測裝置並調整高對比發亮 UI
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       const colDesk = document.getElementById('colDesktop');
       const colMob = document.getElementById('colMobile');
