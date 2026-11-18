@@ -31,17 +31,21 @@
     .desktop-hint { display: block; font-size: 12.5px; color: #8a94a5; margin-top: 6px; font-weight: normal; }
     
     .file-list { margin-top: 12px; display: none; flex-direction: column; gap: 8px; }
-    .file-badge { background: #f1f5f9; border-left: 4px solid #3b82f6; padding: 10px 12px; border-radius: 6px; font-size: 13.5px; color: #1e293b; font-weight: bold; display: flex; align-items: center; gap: 8px; word-break: break-all; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .file-badge { background: #f1f5f9; border-left: 4px solid #3b82f6; padding: 10px 12px; border-radius: 6px; font-size: 13.5px; color: #1e293b; font-weight: bold; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .file-info { display: flex; align-items: center; gap: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .file-preview-count { font-size: 12px; color: #64748b; font-weight: normal; flex-shrink: 0; }
 
     #submitBtn { background: #2b6cb0; color: #fff; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; transition: all 0.25s ease; }
     #submitBtn:hover { background: #2c5282; }
-    #submitBtn.success { background: #2f855a; animation: pop 0.4s ease; }
-    #submitBtn.error { background: #c53030; }
     
-    @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.03); } 100% { transform: scale(1); } }
+    /* 獨立的大型下載按鈕 */
+    .download-action-btn { background: #2f855a; color: #fff; border: none; padding: 16px 24px; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; width: 100%; margin-top: 15px; box-shadow: 0 4px 6px rgba(47, 133, 90, 0.2); transition: all 0.2s ease; animation: pop 0.4s ease; }
+    .download-action-btn:hover { background: #276749; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(47, 133, 90, 0.3); }
+
+    @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
     #log { margin-top: 20px; display: none; }
-    .status-msg { padding: 14px 16px; border-radius: 6px; background: #edf2f7; font-size: 14.5px; line-height: 1.6; }
+    .status-msg { padding: 14px 16px; border-radius: 6px; background: #edf2f7; font-size: 14.5px; line-height: 1.6; margin-bottom: 15px; }
     .error-msg { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
     
     .result-title { font-weight: bold; color: #2f855a; margin-bottom: 10px; font-size: 15px; }
@@ -68,17 +72,15 @@
     .missing-banner .title { font-weight: bold; color: #9b2c2c; font-size: 16px; }
     .missing-banner .count { font-weight: bold; color: #c53030; font-size: 22px; }
 
-    /* ================= 彈出式對話框 - 明亮高對比模式 ================= */
+    /* ================= 明亮高對比：確認對話框 ================= */
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.65); z-index: 9999; justify-content: center; align-items: center;
       animation: fadeIn 0.2s ease;
     }
     .modal-box {
-      background: #ffffff;
-      width: 92%; max-width: 520px; max-height: 90vh; 
-      border-radius: 12px; display: flex; flex-direction: column;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      background: #ffffff; width: 92%; max-width: 520px; max-height: 90vh; 
+      border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
     }
     .modal-header { background: #ebf8ff; padding: 16px 20px; font-weight: bold; color: #2c5282; font-size: 16px; border-bottom: 1px solid #bee3f8; display: flex; align-items: center; gap: 8px; flex-shrink: 0; border-radius: 12px 12px 0 0; }
     .modal-body { padding: 20px; overflow-y: auto; }
@@ -94,21 +96,17 @@
     .highlight-action { color: #2b6cb0; font-weight: bold; }
     .final-tip { font-weight: bold; color: #2b6cb0; font-size: 14px; margin-top: 12px; background: #ebf8ff; padding: 10px; border-radius: 6px; text-align: center; border: 1px dashed #bee3f8; }
 
-    /* 裝置動態高光設定（明亮版） */
     .device-active { border: 2px solid #3b82f6; background: #f0f7ff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15); }
     .device-active .col-title { color: #1e3a8a; border-bottom-color: #bfdbfe; }
     .device-active .step-text { color: #334155; }
     
     .device-inactive { border: 2px solid #e2e8f0; background: #f8fafc; opacity: 0.55; filter: grayscale(100%); }
     .device-inactive .col-title { color: #64748b; }
-    
     .current-badge { background: #3b82f6; color: #fff; font-size: 12px; padding: 4px 8px; border-radius: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); }
 
-    .modal-footer { padding: 14px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; flex-shrink: 0; border-radius: 0 0 12px 12px; }
-    .btn-cancel { background: #edf2f7; color: #4a5568; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; font-size: 14.5px; cursor: pointer; transition: 0.2s; }
-    .btn-cancel:hover { background: #e2e8f0; }
-    .btn-confirm { background: #2f855a; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 14.5px; cursor: pointer; transition: 0.2s; }
-    .btn-confirm:hover { background: #276749; }
+    .modal-footer { padding: 14px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; flex-shrink: 0; border-radius: 0 0 12px 12px; }
+    .btn-confirm { background: #2b6cb0; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.2s; }
+    .btn-confirm:hover { background: #1e3a8a; }
     
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -160,30 +158,25 @@
       </div>
     </div>
 
-    <button id="submitBtn" onclick="openConfirmModal()"> 開始比對並下載「未回診名單」 </button>
+    <button id="submitBtn" onclick="processFiles()"> 執行比對資料 </button>
     <div id="log"></div>
   </div>
 
-  <!-- 明亮高對比：確認對話框 -->
-  <div class="modal-overlay" id="confirmModal">
+  <!-- 下載提示對話框 (現在改為按下下載時才出現) -->
+  <div class="modal-overlay" id="downloadModal">
     <div class="modal-box">
-      <div class="modal-header">💡 檔案儲存與分享說明</div>
+      <div class="modal-header">💡 檔案已開始下載！請注意儲存位置</div>
       <div class="modal-body">
         <div class="modal-grid">
           
-          <!-- 上半部：電腦端 -->
           <div class="modal-col" id="colDesktop">
             <div class="col-title"><span>💻 電腦端</span><span id="badgeDesktop"></span></div>
-            <div class="step-text">
-              比對完成後，檔案將會 <b>自動存入「下載」資料夾</b>。
-            </div>
+            <div class="step-text">檔案已 <b>自動存入「下載」資料夾</b>。</div>
           </div>
           
-          <!-- 下半部：手機端 -->
           <div class="modal-col" id="colMobile">
             <div class="col-title"><span>📱 手機 / 平板端</span><span id="badgeMobile"></span></div>
             <div class="step-text">將出現 <b>(1)</b> 或 <b>(2)</b> 兩種狀況：</div>
-            
             <div class="ios-card">
               <b>(1) 出現「下載提示」</b>
               ➔ 點擊 <span class="highlight-action">下載</span> 
@@ -194,25 +187,26 @@
               </svg> 
               ➔ 分享
             </div>
-            
             <div class="ios-card">
               <b>(2) 出現 在「Excel」中打開</b>
               ➔ 點擊 <span class="highlight-action">更多...</span>
             </div>
-            
             <div class="final-tip">👉 皆可傳至 LINE 或 儲存到檔案</div>
           </div>
           
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-cancel" onclick="closeConfirmModal()">取消</button>
-        <button class="btn-confirm" onclick="processFiles()">確定，開始產生名單</button>
+        <button class="btn-confirm" onclick="closeDownloadModal()">我知道了</button>
       </div>
     </div>
   </div>
 
   <script>
+    // 全域變數，用來暫存算好的檔案
+    let globalWorkbook = null;
+    let globalFileName = "";
+
     ['caseZone', 'returnZone'].forEach(zoneId => {
       const zone = document.getElementById(zoneId);
       zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
@@ -220,16 +214,17 @@
       zone.addEventListener('drop', () => zone.classList.remove('dragover'));
     });
 
-    function updateFileList(inputId, listId) {
+    // 【新增功能】：非同步讀取檔案，立刻顯示筆數預覽
+    async function updateFileList(inputId, listId) {
       const inputEl = document.getElementById(inputId);
       const listEl = document.getElementById(listId);
       const btn = document.getElementById('submitBtn');
       const logEl = document.getElementById('log');
 
-      btn.classList.remove('success', 'error');
-      btn.innerText = '開始比對並下載「未回診名單」';
       logEl.style.display = 'none';
       logEl.innerHTML = '';
+      globalWorkbook = null;
+      btn.style.display = 'block';
 
       const rawFiles = Array.from(inputEl.files);
       const validExts = ['.xls', '.xlsx', '.csv'];
@@ -259,8 +254,26 @@
         return;
       }
       
+      // 先產生介面，顯示「計算中...」
       listEl.style.display = 'flex';
-      listEl.innerHTML = validFiles.map(f => `<div class="file-badge">📄 ${f.name}</div>`).join('');
+      listEl.innerHTML = validFiles.map((f, index) => `
+        <div class="file-badge">
+          <div class="file-info">📄 ${f.name}</div>
+          <div class="file-preview-count" id="${inputId}-count-${index}">⏳ 讀取中...</div>
+        </div>
+      `).join('');
+
+      // 背景偷偷解析每個檔案並更新筆數
+      for (let i = 0; i < validFiles.length; i++) {
+        try {
+          const data = await readExcel(validFiles[i]);
+          // 簡易計算總列數 (扣除標題大約估算)
+          const rowCount = Math.max(0, data.rows.length - 1);
+          document.getElementById(`${inputId}-count-${i}`).innerHTML = `約 <b>${rowCount}</b> 筆`;
+        } catch(e) {
+          document.getElementById(`${inputId}-count-${i}`).innerHTML = `格式未確認`;
+        }
+      }
     }
 
     function resetAll() {
@@ -272,49 +285,44 @@
       document.getElementById('returnFileList').innerHTML = '';
       document.getElementById('log').style.display = 'none';
       document.getElementById('log').innerHTML = '';
-      const btn = document.getElementById('submitBtn');
-      btn.classList.remove('success', 'error');
-      btn.innerText = '開始比對並下載「未回診名單」';
+      document.getElementById('submitBtn').style.display = 'block';
+      globalWorkbook = null;
     }
 
-    /* ================= 裝置偵測與對話框控制 ================= */
-    function openConfirmModal() {
-      const caseInput = document.getElementById('caseFiles').files;
-      const returnInput = document.getElementById('returnFiles').files;
-      const logEl = document.getElementById('log');
-      
-      if (!caseInput.length || !returnInput.length) {
-        logEl.style.display = 'block';
-        logEl.innerHTML = `<div class="status-msg error-msg">⚠️ 請先選擇「收案」檔與「已回診」檔！</div>`;
-        return;
-      }
-      
-      // 自動偵測裝置並調整高對比發亮 UI
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      const colDesk = document.getElementById('colDesktop');
-      const colMob = document.getElementById('colMobile');
-      const badgeDesk = document.getElementById('badgeDesktop');
-      const badgeMob = document.getElementById('badgeMobile');
-      
-      const badgeHTML = '<span class="current-badge">📍 您的裝置</span>';
-      badgeDesk.innerHTML = '';
-      badgeMob.innerHTML = '';
-      
-      if (isMobile) {
-        colMob.className = 'modal-col device-active';
-        colDesk.className = 'modal-col device-inactive';
-        badgeMob.innerHTML = badgeHTML;
-      } else {
-        colDesk.className = 'modal-col device-active';
-        colMob.className = 'modal-col device-inactive';
-        badgeDesk.innerHTML = badgeHTML;
-      }
+    /* ================= 觸發下載與對話框控制 ================= */
+    function executeDownload() {
+      if (globalWorkbook && globalFileName) {
+        // 執行下載
+        XLSX.writeFile(globalWorkbook, globalFileName);
+        
+        // 裝置動態高光設定
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const colDesk = document.getElementById('colDesktop');
+        const colMob = document.getElementById('colMobile');
+        const badgeDesk = document.getElementById('badgeDesktop');
+        const badgeMob = document.getElementById('badgeMobile');
+        
+        const badgeHTML = '<span class="current-badge">📍 您的裝置</span>';
+        badgeDesk.innerHTML = '';
+        badgeMob.innerHTML = '';
+        
+        if (isMobile) {
+          colMob.className = 'modal-col device-active';
+          colDesk.className = 'modal-col device-inactive';
+          badgeMob.innerHTML = badgeHTML;
+        } else {
+          colDesk.className = 'modal-col device-active';
+          colMob.className = 'modal-col device-inactive';
+          badgeDesk.innerHTML = badgeHTML;
+        }
 
-      document.getElementById('confirmModal').style.display = 'flex';
+        // 彈出指導對話框
+        document.getElementById('downloadModal').style.display = 'flex';
+      }
     }
 
-    function closeConfirmModal() {
-      document.getElementById('confirmModal').style.display = 'none';
+    function closeDownloadModal() {
+      document.getElementById('downloadModal').style.display = 'none';
     }
     /* ======================================================== */
 
@@ -329,10 +337,10 @@
             const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
             resolve({ name: file.name, rows });
           } catch (err) {
-            reject(new Error(`解析檔案 [${file.name}] 失敗，可能是檔案損毀或格式不符。`));
+            reject(new Error(`解析檔案失敗`));
           }
         };
-        reader.onerror = () => reject(new Error(`讀取檔案 [${file.name}] 失敗。`));
+        reader.onerror = () => reject(new Error(`讀取檔案失敗`));
         reader.readAsArrayBuffer(file);
       });
     }
@@ -367,20 +375,22 @@
     }
 
     async function processFiles() {
-      closeConfirmModal();
-
       const caseInput = document.getElementById('caseFiles').files;
       const returnInput = document.getElementById('returnFiles').files;
       const logEl = document.getElementById('log');
       const btn = document.getElementById('submitBtn');
-      logEl.style.display = 'block';
+      
+      if (!caseInput.length || !returnInput.length) {
+        logEl.style.display = 'block';
+        logEl.innerHTML = `<div class="status-msg error-msg">⚠️ 請先選擇「收案」檔與「已回診」檔！</div>`;
+        return;
+      }
 
-      btn.classList.remove('success', 'error');
+      logEl.style.display = 'block';
       btn.innerText = "⏳ 資料比對處理中...";
       logEl.innerHTML = `<div class="status-msg">⏳ 資料讀取與比對中...</div>`;
 
       if (typeof XLSX === 'undefined') {
-        btn.classList.add('error');
         btn.innerText = "❌ 執行失敗";
         logEl.innerHTML = `<div class="status-msg error-msg">❌ <b>嚴重錯誤：</b><br>無法載入核心處理套件 (SheetJS)。<br>請確認電腦已連上網路，並<b>暫時關閉 Safari 或 Chrome 的「阻擋廣告/追蹤」擴充功能</b>後重新整理網頁。</div>`;
         return;
@@ -396,7 +406,7 @@
           const returnData = await readExcel(file);
           const returnMeta = detectIdColumn(returnData.rows);
           if (!returnMeta) {
-            throw new Error(`在已回診檔案 (${returnData.name}) 中找不到「身份證」標題欄，請確認檔案格式！`);
+            throw new Error(`在已回診檔案 (${returnData.name}) 中找不到「身份證」標題欄！`);
           }
           let thisReturnCount = 0;
           for (let i = returnMeta.headerRowIndex + 1; i < returnData.rows.length; i++) {
@@ -475,18 +485,17 @@
           }
         }
 
-        const outFileName = `未回診名單_${getTimestamp()}.xlsx`;
+        // 儲存至全域變數，等待點擊按鈕時下載
+        globalFileName = `未回診名單_${getTimestamp()}.xlsx`;
         const outSheet = XLSX.utils.aoa_to_sheet([headerRow, ...missingCases]);
-        const outWb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(outWb, outSheet, "未回診名單");
-        
-        XLSX.writeFile(outWb, outFileName);
+        globalWorkbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(globalWorkbook, outSheet, "未回診名單");
 
-        btn.classList.add('success');
-        btn.innerText = `✓ 比對完成並已下載檔案`;
+        // 隱藏原始按鈕，呈現結果與獨立下載按鈕
+        btn.style.display = 'none';
 
         logEl.innerHTML = `
-          <div class="result-title">✅ 統計結果如下：</div>
+          <div class="result-title">✅ 比對完成！統計結果如下：</div>
           <div class="table-wrapper">
             <table class="summary-table">
               <thead><tr><th>項目</th><th>收案</th><th>已回診</th></tr></thead>
@@ -517,6 +526,11 @@
             <span class="title">📌 未回診（需追蹤人數）</span>
             <span class="count">${missingCases.length} 人</span>
           </div>
+          
+          <!-- 【新增】將下載動作獨立為超顯眼的按鈕 -->
+          <button class="download-action-btn" onclick="executeDownload()">
+            📥 點擊下載「未回診名單」 (${missingCases.length} 人)
+          </button>
         `;
         
         setTimeout(() => {
@@ -524,8 +538,7 @@
         }, 100);
 
       } catch (error) {
-        btn.classList.add('error');
-        btn.innerText = "❌ 發生錯誤，請看下方說明";
+        btn.innerText = "重新執行比對";
         logEl.innerHTML = `<div class="status-msg error-msg">❌ <b>處理過程中發生錯誤：</b><br>${error.message}</div>`;
         console.error(error);
         
