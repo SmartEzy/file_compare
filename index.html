@@ -50,7 +50,6 @@
     /* ================= 獨立模組卡片設計 ================= */
     .section-card { background: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 20px; border: 1px solid #e2e8f0; }
     
-    /* 【修改 3】加入多選說明的排版 */
     .section-title { font-weight: bold; font-size: 16px; color: #334155; margin-bottom: 14px; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px; }
     .step-hint { font-size: 13.5px; color: #64748b; font-weight: normal; }
 
@@ -78,7 +77,6 @@
     /* ================= 統計結果表格 ================= */
     .result-container { background: #fff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 16px; }
     
-    /* 移除 emoji */
     .result-title { font-weight: bold; color: #f8fafc; background: #334155; padding: 14px 20px; border-radius: 8px 8px 0 0; font-size: 16px; margin: 0; }
     
     .table-wrapper { overflow-x: auto; background: #fff; }
@@ -92,8 +90,6 @@
     .summary-table td.raw-total-cell { border-top: none; padding-top: 0; vertical-align: bottom; }
     
     .file-breakdown { font-size: 13px; color: #64748b; }
-    
-    /* 【修改 2】改善表格內清單的排版，確保檔名過長會被截斷而不會撐破表格 */
     .file-item { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; white-space: nowrap; }
     .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
     .file-count { flex-shrink: 0; font-variant-numeric: tabular-nums; }
@@ -101,17 +97,18 @@
     .raw-total { display: flex; justify-content: space-between; font-weight: bold; color: #334155; border-top: 1px dashed #cbd5e1; padding-top: 8px; white-space: nowrap; }
     .summary-table tr.final-row td { background: #f8fafc; font-weight: bold; font-size: 15px; color: #0f172a; }
 
-    /* ================= 【修改 1】全新「點亮感」的未回診卡片 ================= */
+    /* ================= 點亮感未回診卡片 (灰黑文字) ================= */
     .missing-result-card {
       padding: 20px 24px; background: #ffffff; 
-      border: 2px solid #3b82f6; /* 發亮藍色邊框 */
+      border: 2px solid #3b82f6; 
       border-radius: 10px;
       display: flex; justify-content: space-between; align-items: center; 
-      box-shadow: 0 0 16px rgba(59, 130, 246, 0.2); /* 發亮光暈效果 */
+      box-shadow: 0 0 16px rgba(59, 130, 246, 0.2); 
     }
     .missing-info { display: flex; align-items: baseline; gap: 12px; }
-    .missing-info .title { font-weight: bold; color: #2563eb; font-size: 16px; } /* 醒目藍字 */
-    .missing-info .count { font-weight: bold; color: #1e3a8a; font-size: 28px; letter-spacing: 1px; } /* 沉穩深藍數字 */
+    /* 【修改點】改為灰黑色系 */
+    .missing-info .title { font-weight: bold; color: #475569; font-size: 16px; } 
+    .missing-info .count { font-weight: bold; color: #1e293b; font-size: 28px; letter-spacing: 1px; } 
     
     .dl-btn {
       background: #3b82f6; color: #fff; border: none; padding: 12px 28px;
@@ -155,7 +152,6 @@
     
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    /* ================= 【修改 2】手機排版深度優化 ================= */
     @media (max-width: 650px) {
       body { margin: 0; padding: 12px; }
       .main-container { padding: 20px 12px calc(60px + env(safe-area-inset-bottom, 20px)); }
@@ -167,11 +163,8 @@
       .drop-zone { padding: 26px 14px; }
       .desktop-hint { display: none; }
       
-      /* 取消 min-width，讓表格適應螢幕 */
       .summary-table { min-width: 0; width: 100%; font-size: 13px; }
       .summary-table th, .summary-table td { padding: 8px 4px; }
-      
-      /* 調整欄寬比例：第一欄文字允許自然換行 */
       .summary-table th:first-child { width: 24%; }
       .summary-table th:nth-child(2), .summary-table th:nth-child(3) { width: 38%; }
       .summary-table td.row-label { white-space: normal; word-break: keep-all; line-height: 1.4; }
@@ -179,7 +172,6 @@
       .modal-col { padding: 14px; }
       .ios-card { padding: 10px; font-size: 13px; }
       
-      /* 手機版未回診卡片維持單列，壓縮間距 */
       .missing-result-card { padding: 16px 14px; }
       .missing-info { gap: 6px; }
       .missing-info .title { font-size: 15px; }
@@ -199,7 +191,6 @@
     </div>
     
     <div class="section-card" id="step1Card">
-      <!-- 【修改 3】清楚加入提示說明 -->
       <div class="section-title">
         Step 1. 選擇「收案」檔
         <span class="step-hint">（可一次選取多個檔案）</span>
@@ -212,7 +203,6 @@
     </div>
 
     <div class="section-card" id="step2Card" style="display: none;">
-      <!-- 【修改 3】清楚加入提示說明 -->
       <div class="section-title">
         Step 2. 選擇「已回診」檔
         <span class="step-hint">（可一次選取多個檔案）</span>
@@ -643,7 +633,6 @@
             </div>
           </div>
           
-          <!-- 【點亮設計】發亮藍框與淺色卡片 -->
           <div class="missing-result-card">
             <div class="missing-info">
               <div class="title">未回診</div>
