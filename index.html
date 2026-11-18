@@ -7,7 +7,7 @@
   
   <link rel="icon" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
-  <meta name="apple-mobile-web-app-title" content="未回診比تدائي工具">
+  <meta name="apple-mobile-web-app-title" content="未回診比對工具">
   
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <style>
@@ -223,6 +223,7 @@
   </div>
 </div>
 
+  <!-- 下載提示對話框 -->
   <div class="modal-overlay" id="downloadModal">
     <div class="modal-box">
       <div class="modal-header">檔案即將下載，請留意儲存位置</div>
@@ -281,6 +282,12 @@
   <script>
     let globalWorkbook = null;
     let globalFileName = "";
+    
+    // 【核心新增】利用全域變數累積檔案列表，達到無限附加功能
+    const accumulatedFiles = {
+      'caseFiles': [],
+      'returnFiles': []
+    };
 
     ['caseZone', 'returnZone'].forEach(zoneId => {
       const zone = document.getElementById(zoneId);
@@ -325,53 +332,57 @@
       return null;
     }
 
+    // 【修改】專屬移除函式，移除全域暫存中的檔案並重新渲染
     function removeFile(inputId, listId, indexToRemove) {
-      const inputEl = document.getElementById(inputId);
-      const dt = new DataTransfer();
-      const files = inputEl.files;
-      for (let i = 0; i < files.length; i++) {
-        if (i !== indexToRemove) {
-          dt.items.add(files[i]);
-        }
-      }
-      inputEl.files = dt.files;
-      updateFileList(inputId, listId);
+      accumulatedFiles[inputId].splice(indexToRemove, 1);
+      renderFileList(inputId, listId);
     }
 
-    async function updateFileList(inputId, listId) {
+    // 【修改】將更新檔案清單的動作分為「累積」與「渲染」兩步驟
+    function updateFileList(inputId, listId) {
       const inputEl = document.getElementById(inputId);
-      const listEl = document.getElementById(listId);
-      const logEl = document.getElementById('log');
-      
-      const dropZone = inputEl.closest('.drop-zone');
-
-      logEl.style.display = 'none';
-      logEl.innerHTML = '';
-      globalWorkbook = null;
-
-      const rawFiles = Array.from(inputEl.files);
-      const validExts = ['.xls', '.xlsx', '.csv'];
-      const validFiles = [];
+      const newFiles = Array.from(inputEl.files);
       let hasInvalid = false;
 
-      rawFiles.forEach(file => {
+      // 將新選擇的檔案附加進去，並自動過濾重複檔名
+      newFiles.forEach(file => {
         const lowerName = file.name.toLowerCase();
-        if (validExts.some(ext => lowerName.endsWith(ext))) {
-          validFiles.push(file);
+        if (['.xls', '.xlsx', '.csv'].some(ext => lowerName.endsWith(ext))) {
+          if (!accumulatedFiles[inputId].some(f => f.name === file.name)) {
+            accumulatedFiles[inputId].push(file);
+          }
         } else {
           hasInvalid = true;
         }
       });
 
       if (hasInvalid) {
-        const dt = new DataTransfer();
-        validFiles.forEach(f => dt.items.add(f));
-        inputEl.files = dt.files;
-        logEl.style.display = 'block';
-        logEl.innerHTML = `<div class="status-msg error-msg">⚠️ 僅支援 .xls, .xlsx, .csv 檔案格式</div>`;
+        document.getElementById('log').style.display = 'block';
+        document.getElementById('log').innerHTML = `<div class="status-msg error-msg">⚠️ 僅支援 .xls, .xlsx, .csv 檔案格式</div>`;
       }
 
-      if (!validFiles.length) {
+      renderFileList(inputId, listId);
+    }
+
+    // 處理 UI 渲染與同步 DataTransfer
+    async function renderFileList(inputId, listId) {
+      const inputEl = document.getElementById(inputId);
+      const listEl = document.getElementById(listId);
+      const logEl = document.getElementById('log');
+      const dropZone = inputEl.closest('.drop-zone');
+
+      // 同步全域變數回 input 的 fileList，確保後續比對能抓到全部檔案
+      const dt = new DataTransfer();
+      accumulatedFiles[inputId].forEach(f => dt.items.add(f));
+      inputEl.files = dt.files;
+
+      logEl.style.display = 'none';
+      logEl.innerHTML = '';
+      globalWorkbook = null;
+
+      const validFiles = accumulatedFiles[inputId];
+
+      if (validFiles.length === 0) {
         dropZone.classList.remove('has-files');
         dropZone.querySelector('.drop-hint').innerHTML = `點擊或拖曳選擇檔案`;
         listEl.style.display = 'none';
@@ -430,11 +441,10 @@
             }
             document.getElementById(`${inputId}-count-${i}`).innerHTML = `<b>${exactCount}</b> 筆`;
           } else {
-            document.getElementById(`${inputId}-count-${i}`).innerHTML = `<span style="color:#c53030; font-weight:bold;">格式不符</span>`;
+            document.getElementById(`${inputId}-count-${i}`).innerHTML = `<span style="color:#c53030; font-weight:bold;" title="檔案內找不到「身分證」標題欄">格式不符</span>`;
             if (badgeEl) badgeEl.classList.add('error-badge');
           }
         } catch(e) {
-          // 【更新】明確提示檔案可能被鎖住
           document.getElementById(`${inputId}-count-${i}`).innerHTML = `<span style="color:#c53030; font-weight:bold;" title="檔案可能被 Excel 開啟中，或尚未下載完成">讀取失敗 (請確認未被開啟)</span>`;
           if (badgeEl) badgeEl.classList.add('error-badge');
         }
@@ -442,6 +452,10 @@
     }
 
     function resetAll() {
+      // 重置全域變數陣列
+      accumulatedFiles['caseFiles'] = [];
+      accumulatedFiles['returnFiles'] = [];
+      
       document.getElementById('caseFiles').value = '';
       document.getElementById('returnFiles').value = '';
       
@@ -505,14 +519,16 @@
     }
 
     async function processFiles() {
-      const caseInput = document.getElementById('caseFiles').files;
-      const returnInput = document.getElementById('returnFiles').files;
+      // 改從累積檔案陣列中抓取，確保能拿到多次附加上傳的所有檔案
+      const caseFiles = accumulatedFiles['caseFiles'];
+      const returnFiles = accumulatedFiles['returnFiles'];
+      
       const logEl = document.getElementById('log');
       const btn = document.getElementById('submitBtn');
       
-      if (!caseInput.length || !returnInput.length) {
+      if (caseFiles.length === 0 || returnFiles.length === 0) {
         logEl.style.display = 'block';
-        logEl.innerHTML = `<div class="status-msg error-msg">⚠️ 請先選擇「收案」檔與「已回診」檔！</div>`;
+        logEl.innerHTML = `<div class="status-msg error-msg">⚠️ 請確認「收案」檔與「已回診」檔皆已上傳！</div>`;
         return;
       }
 
@@ -536,11 +552,11 @@
         let returnDuplicateCount = 0;
         const returnFileBreakdown = [];
 
-        for (const file of returnInput) {
+        for (const file of returnFiles) {
           const returnData = await readExcel(file);
           const returnMeta = detectIdColumn(returnData.rows);
           if (!returnMeta) {
-            throw new Error(`在已回診檔案 (${returnData.name}) 中找不到「身份證」標題欄！`);
+            throw new Error(`在已回診檔案 (${file.name}) 中找不到「身份證」標題欄！`);
           }
           let thisReturnCount = 0;
           for (let i = returnMeta.headerRowIndex + 1; i < returnData.rows.length; i++) {
@@ -566,7 +582,7 @@
         let duplicateCount = 0;
         const caseFileBreakdown = [];
 
-        for (const file of caseInput) {
+        for (const file of caseFiles) {
           const fileData = await readExcel(file);
           const rows = fileData.rows;
           const meta = detectIdColumn(rows);
