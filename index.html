@@ -7,7 +7,7 @@
   
   <link rel="icon" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
-  <meta name="apple-mobile-web-app-title" content="未回診比對工具">
+  <meta name="apple-mobile-web-app-title" content="未回診比تدائي工具">
   
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <style>
@@ -62,9 +62,15 @@
     .drop-zone.has-files .drop-hint { color: #1d4ed8; }
     
     .file-list { margin-top: 12px; display: none; flex-direction: column; gap: 8px; }
-    .file-badge { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #3b82f6; padding: 10px 14px; border-radius: 6px; font-size: 14px; color: #1e293b; font-weight: bold; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .file-info { display: flex; align-items: center; gap: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .file-badge { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #3b82f6; padding: 10px 14px; border-radius: 6px; font-size: 14px; color: #1e293b; font-weight: bold; display: flex; align-items: center; justify-content: space-between; gap: 8px; transition: 0.3s ease; }
+    
+    .file-badge.error-badge { background: #fff5f5; border-color: #feb2b2; border-left-color: #ef4444; color: #991b1b; }
+    
+    .file-info { display: flex; align-items: center; gap: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
     .file-preview-count { font-size: 13px; color: #475569; font-weight: normal; flex-shrink: 0; }
+    
+    .remove-file-btn { background: none; border: none; color: #94a3b8; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0 4px; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0; }
+    .remove-file-btn:hover { color: #ef4444; transform: scale(1.1); }
 
     #submitBtn { background: #334155; color: #fff; border: none; padding: 16px 24px; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
     #submitBtn:hover { background: #1e293b; box-shadow: 0 6px 12px rgba(0,0,0,0.1); transform: translateY(-1px); }
@@ -217,7 +223,6 @@
   </div>
 </div>
 
-  <!-- 下載提示對話框 -->
   <div class="modal-overlay" id="downloadModal">
     <div class="modal-box">
       <div class="modal-header">檔案即將下載，請留意儲存位置</div>
@@ -290,6 +295,7 @@
         reader.onload = e => {
           try {
             const data = new Uint8Array(e.target.result);
+            if (data.length === 0) throw new Error("檔案為空");
             const workbook = XLSX.read(data, { type: 'array', raw: false });
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
             const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
@@ -304,17 +310,32 @@
     }
 
     function detectIdColumn(rows) {
-      for (let r = 0; r < Math.min(15, rows.length); r++) {
+      const maxRows = Math.min(100, rows.length);
+      for (let r = 0; r < maxRows; r++) {
         const row = rows[r];
-        if (!row) continue;
+        if (!row || !Array.isArray(row)) continue;
         for (let c = 0; c < row.length; c++) {
-          const cellText = String(row[c] || "").replace(/\s+/g, "");
-          if (cellText.includes("身份証") || cellText.includes("身份證") || cellText.includes("身分證") || cellText.includes("身分証")) {
+          let cellText = String(row[c] || "").replace(/[\s\u3000\n\r]/g, "");
+          if (cellText.includes("身份証") || cellText.includes("身份證") || 
+              cellText.includes("身分證") || cellText.includes("身分証")) {
             return { headerRowIndex: r, idCol: c };
           }
         }
       }
       return null;
+    }
+
+    function removeFile(inputId, listId, indexToRemove) {
+      const inputEl = document.getElementById(inputId);
+      const dt = new DataTransfer();
+      const files = inputEl.files;
+      for (let i = 0; i < files.length; i++) {
+        if (i !== indexToRemove) {
+          dt.items.add(files[i]);
+        }
+      }
+      inputEl.files = dt.files;
+      updateFileList(inputId, listId);
     }
 
     async function updateFileList(inputId, listId) {
@@ -370,9 +391,12 @@
       
       listEl.style.display = 'flex';
       listEl.innerHTML = validFiles.map((f, index) => `
-        <div class="file-badge">
+        <div class="file-badge" id="${inputId}-badge-${index}">
           <div class="file-info">📄 <span class="file-name">${f.name}</span></div>
-          <div class="file-preview-count" id="${inputId}-count-${index}">⏳ 讀取中...</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="file-preview-count" id="${inputId}-count-${index}">⏳ 讀取中...</div>
+            <button class="remove-file-btn" onclick="removeFile('${inputId}', '${listId}', ${index})" title="移除此檔案">✕</button>
+          </div>
         </div>
       `).join('');
 
@@ -391,6 +415,7 @@
       }
 
       for (let i = 0; i < validFiles.length; i++) {
+        const badgeEl = document.getElementById(`${inputId}-badge-${i}`);
         try {
           const data = await readExcel(validFiles[i]);
           const meta = detectIdColumn(data.rows);
@@ -405,10 +430,13 @@
             }
             document.getElementById(`${inputId}-count-${i}`).innerHTML = `<b>${exactCount}</b> 筆`;
           } else {
-            document.getElementById(`${inputId}-count-${i}`).innerHTML = `<span style="color:#c53030">格式不符</span>`;
+            document.getElementById(`${inputId}-count-${i}`).innerHTML = `<span style="color:#c53030; font-weight:bold;">格式不符</span>`;
+            if (badgeEl) badgeEl.classList.add('error-badge');
           }
         } catch(e) {
-          document.getElementById(`${inputId}-count-${i}`).innerHTML = `讀取失敗`;
+          // 【更新】明確提示檔案可能被鎖住
+          document.getElementById(`${inputId}-count-${i}`).innerHTML = `<span style="color:#c53030; font-weight:bold;" title="檔案可能被 Excel 開啟中，或尚未下載完成">讀取失敗 (請確認未被開啟)</span>`;
+          if (badgeEl) badgeEl.classList.add('error-badge');
         }
       }
     }
@@ -557,7 +585,6 @@
           }
 
           if (!headerRow) {
-            // 【新增】匯出時在第一欄加上編號
             headerRow = ["編號", "來源檔案/類別", ...rows[meta.headerRowIndex]];
           }
 
@@ -589,7 +616,6 @@
         for (const [idNo, item] of caseMap.entries()) {
           if (!returnIds.has(idNo)) {
             const combinedCategory = Array.from(item.categories).join(" ＋ ");
-            // 【新增】每筆資料最前面加入流水號 counter
             missingCases.push([counter++, combinedCategory, ...item.rowData]);
           }
         }
@@ -597,10 +623,9 @@
         globalFileName = `未回診名單_${getTimestamp()}.xlsx`;
         const outSheet = XLSX.utils.aoa_to_sheet([headerRow, ...missingCases]);
         
-        // 【新增】設定輸出 Excel 的欄寬，A欄編號較窄，B欄檔名較寬
         outSheet['!cols'] = [
-          { wch: 6 },  // A欄: 編號
-          { wch: 18 }  // B欄: 來源檔案/類別
+          { wch: 6 },
+          { wch: 18 }
         ];
 
         globalWorkbook = XLSX.utils.book_new();
