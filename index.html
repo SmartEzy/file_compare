@@ -73,7 +73,8 @@
     .remove-file-btn:hover { color: #ef4444; transform: scale(1.1); }
 
     #submitBtn { background: #334155; color: #fff; border: none; padding: 16px 24px; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-    #submitBtn:hover { background: #1e293b; box-shadow: 0 6px 12px rgba(0,0,0,0.1); transform: translateY(-1px); }
+    #submitBtn:hover:not(:disabled) { background: #1e293b; box-shadow: 0 6px 12px rgba(0,0,0,0.1); transform: translateY(-1px); }
+    #submitBtn:disabled { opacity: 0.7; cursor: wait; }
 
     #log { display: none; }
     .status-msg { padding: 14px 16px; border-radius: 8px; background: #fff; font-size: 14.5px; line-height: 1.6; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
@@ -283,7 +284,6 @@
     let globalWorkbook = null;
     let globalFileName = "";
     
-    // 【核心新增】利用全域變數累積檔案列表，達到無限附加功能
     const accumulatedFiles = {
       'caseFiles': [],
       'returnFiles': []
@@ -332,19 +332,16 @@
       return null;
     }
 
-    // 【修改】專屬移除函式，移除全域暫存中的檔案並重新渲染
     function removeFile(inputId, listId, indexToRemove) {
       accumulatedFiles[inputId].splice(indexToRemove, 1);
       renderFileList(inputId, listId);
     }
 
-    // 【修改】將更新檔案清單的動作分為「累積」與「渲染」兩步驟
     function updateFileList(inputId, listId) {
       const inputEl = document.getElementById(inputId);
       const newFiles = Array.from(inputEl.files);
       let hasInvalid = false;
 
-      // 將新選擇的檔案附加進去，並自動過濾重複檔名
       newFiles.forEach(file => {
         const lowerName = file.name.toLowerCase();
         if (['.xls', '.xlsx', '.csv'].some(ext => lowerName.endsWith(ext))) {
@@ -356,28 +353,55 @@
         }
       });
 
+      // 清空 input 值，確保若把檔案移除後想馬上重選同一個檔案時，能正常觸發 onchange
+      inputEl.value = '';
+
       if (hasInvalid) {
         document.getElementById('log').style.display = 'block';
         document.getElementById('log').innerHTML = `<div class="status-msg error-msg">⚠️ 僅支援 .xls, .xlsx, .csv 檔案格式</div>`;
+      } else {
+        document.getElementById('log').style.display = 'none';
+        document.getElementById('log').innerHTML = '';
       }
 
       renderFileList(inputId, listId);
     }
 
-    // 處理 UI 渲染與同步 DataTransfer
+    // 【修正 1 & 2】統一檢查 Step 1、Step 2 與執行按鈕的顯示狀態及文字重置
+    function syncStepsVisibility() {
+      const hasCase = accumulatedFiles['caseFiles'].length > 0;
+      const hasReturn = accumulatedFiles['returnFiles'].length > 0;
+      const step2 = document.getElementById('step2Card');
+      const submitBtn = document.getElementById('submitBtn');
+
+      if (!hasCase) {
+        step2.style.display = 'none';
+        submitBtn.style.display = 'none';
+        return;
+      }
+
+      if (step2.style.display === 'none' || step2.style.display === '') {
+        step2.style.display = 'block';
+        step2.style.animation = 'fadeIn 0.4s ease forwards';
+      }
+
+      if (hasCase && hasReturn) {
+        submitBtn.innerText = '執行比對資料';
+        submitBtn.disabled = false;
+        if (submitBtn.style.display === 'none' || submitBtn.style.display === '') {
+          submitBtn.style.display = 'block';
+          submitBtn.style.animation = 'fadeIn 0.4s ease forwards';
+        }
+      } else {
+        submitBtn.style.display = 'none';
+      }
+    }
+
     async function renderFileList(inputId, listId) {
       const inputEl = document.getElementById(inputId);
       const listEl = document.getElementById(listId);
-      const logEl = document.getElementById('log');
       const dropZone = inputEl.closest('.drop-zone');
 
-      // 同步全域變數回 input 的 fileList，確保後續比對能抓到全部檔案
-      const dt = new DataTransfer();
-      accumulatedFiles[inputId].forEach(f => dt.items.add(f));
-      inputEl.files = dt.files;
-
-      logEl.style.display = 'none';
-      logEl.innerHTML = '';
       globalWorkbook = null;
 
       const validFiles = accumulatedFiles[inputId];
@@ -387,18 +411,12 @@
         dropZone.querySelector('.drop-hint').innerHTML = `點擊或拖曳選擇檔案`;
         listEl.style.display = 'none';
         listEl.innerHTML = '';
-        
-        if (inputId === 'caseFiles') {
-          document.getElementById('step2Card').style.display = 'none';
-          document.getElementById('submitBtn').style.display = 'none';
-        } else if (inputId === 'returnFiles') {
-          document.getElementById('submitBtn').style.display = 'none';
-        }
+        syncStepsVisibility();
         return;
       }
       
       dropZone.classList.add('has-files');
-      dropZone.querySelector('.drop-hint').innerHTML = `已選擇 ${validFiles.length} 個檔案<br><span class="desktop-hint">（點擊可重新選擇或附加）</span>`;
+      dropZone.querySelector('.drop-hint').innerHTML = `已選擇 ${validFiles.length} 個檔案<br><span class="desktop-hint">（點擊可繼續附加檔案）</span>`;
       
       listEl.style.display = 'flex';
       listEl.innerHTML = validFiles.map((f, index) => `
@@ -411,22 +429,13 @@
         </div>
       `).join('');
 
-      if (inputId === 'caseFiles') {
-        const step2 = document.getElementById('step2Card');
-        if (step2.style.display === 'none' || step2.style.display === '') {
-          step2.style.display = 'block';
-          step2.style.animation = 'fadeIn 0.4s ease forwards';
-        }
-      } else if (inputId === 'returnFiles') {
-        const submitBtn = document.getElementById('submitBtn');
-        if (submitBtn.style.display === 'none' || submitBtn.style.display === '') {
-          submitBtn.style.display = 'block';
-          submitBtn.style.animation = 'fadeIn 0.4s ease forwards';
-        }
-      }
+      syncStepsVisibility();
 
       for (let i = 0; i < validFiles.length; i++) {
         const badgeEl = document.getElementById(`${inputId}-badge-${i}`);
+        const countEl = document.getElementById(`${inputId}-count-${i}`);
+        if (!countEl) continue;
+
         try {
           const data = await readExcel(validFiles[i]);
           const meta = detectIdColumn(data.rows);
@@ -439,20 +448,19 @@
               const idNo = String(row[meta.idCol] || "").trim();
               if (idNo) exactCount++;
             }
-            document.getElementById(`${inputId}-count-${i}`).innerHTML = `<b>${exactCount}</b> 筆`;
+            countEl.innerHTML = `<b>${exactCount}</b> 筆`;
           } else {
-            document.getElementById(`${inputId}-count-${i}`).innerHTML = `<span style="color:#c53030; font-weight:bold;" title="檔案內找不到「身分證」標題欄">格式不符</span>`;
+            countEl.innerHTML = `<span style="color:#c53030; font-weight:bold;" title="檔案內找不到「身分證」標題欄">格式不符</span>`;
             if (badgeEl) badgeEl.classList.add('error-badge');
           }
         } catch(e) {
-          document.getElementById(`${inputId}-count-${i}`).innerHTML = `<span style="color:#c53030; font-weight:bold;" title="檔案可能被 Excel 開啟中，或尚未下載完成">讀取失敗 (請確認未被開啟)</span>`;
+          countEl.innerHTML = `<span style="color:#c53030; font-weight:bold;" title="檔案可能被 Excel 開啟中，或尚未下載完成">讀取失敗 (請確認未被開啟)</span>`;
           if (badgeEl) badgeEl.classList.add('error-badge');
         }
       }
     }
 
     function resetAll() {
-      // 重置全域變數陣列
       accumulatedFiles['caseFiles'] = [];
       accumulatedFiles['returnFiles'] = [];
       
@@ -471,8 +479,11 @@
       document.getElementById('log').style.display = 'none';
       document.getElementById('log').innerHTML = '';
       
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.innerText = '執行比對資料';
+      submitBtn.disabled = false;
+      submitBtn.style.display = 'none';
       document.getElementById('step2Card').style.display = 'none';
-      document.getElementById('submitBtn').style.display = 'none';
       globalWorkbook = null;
     }
 
@@ -519,7 +530,6 @@
     }
 
     async function processFiles() {
-      // 改從累積檔案陣列中抓取，確保能拿到多次附加上傳的所有檔案
       const caseFiles = accumulatedFiles['caseFiles'];
       const returnFiles = accumulatedFiles['returnFiles'];
       
@@ -532,16 +542,16 @@
         return;
       }
 
-      logEl.style.display = 'block';
+      // 【修正 1】只改變按鈕文字，不再於下方重複顯示多餘的處理中區塊
+      btn.disabled = true;
       btn.innerText = "⏳ 資料比對處理中...";
-      logEl.innerHTML = `
-        <div class="result-container" style="padding: 24px; text-align: center; border:none; box-shadow:none; background:transparent;">
-          <div style="color: #64748b; font-size: 15px; font-weight: bold;">⏳ 資料讀取與比對中...</div>
-        </div>
-      `;
+      logEl.style.display = 'none';
+      logEl.innerHTML = '';
 
       if (typeof XLSX === 'undefined') {
-        btn.innerText = "❌ 執行失敗";
+        btn.disabled = false;
+        btn.innerText = "執行比對資料";
+        logEl.style.display = 'block';
         logEl.innerHTML = `<div class="status-msg error-msg">❌ <b>嚴重錯誤：</b><br>無法載入核心處理套件 (SheetJS)。<br>請確認電腦已連上網路，並<b>暫時關閉 Safari 或 Chrome 的「阻擋廣告/追蹤」擴充功能</b>後重新整理網頁。</div>`;
         return;
       }
@@ -556,7 +566,7 @@
           const returnData = await readExcel(file);
           const returnMeta = detectIdColumn(returnData.rows);
           if (!returnMeta) {
-            throw new Error(`在已回診檔案 (${file.name}) 中找不到「身份證」標題欄！`);
+            throw new Error(`在已回診檔案 (${returnData.name}) 中找不到「身份證」標題欄！`);
           }
           let thisReturnCount = 0;
           for (let i = returnMeta.headerRowIndex + 1; i < returnData.rows.length; i++) {
@@ -647,8 +657,12 @@
         globalWorkbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(globalWorkbook, outSheet, "未回診名單");
 
+        // 比對完成後隱藏按鈕，並把按鈕文字還原備用
         btn.style.display = 'none';
+        btn.disabled = false;
+        btn.innerText = '執行比對資料';
 
+        logEl.style.display = 'block';
         logEl.innerHTML = `
           <div class="result-container">
             <div class="result-title">比對完成統計如下</div>
@@ -694,7 +708,9 @@
         }, 100);
 
       } catch (error) {
+        btn.disabled = false;
         btn.innerText = "重新執行比對";
+        logEl.style.display = 'block';
         logEl.innerHTML = `<div class="status-msg error-msg">❌ <b>處理過程中發生錯誤：</b><br>${error.message}</div>`;
         console.error(error);
         
