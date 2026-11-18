@@ -86,15 +86,22 @@
     
     .modal-grid { display: flex; flex-direction: column; gap: 16px; }
     
-    /* 移除自動變暗，維持乾淨清爽的雙區塊 */
-    .modal-col { border-radius: 8px; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; }
-    .col-title { font-weight: bold; font-size: 15px; margin-bottom: 10px; padding-bottom: 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; color: #2d3748; }
+    .modal-col { border-radius: 8px; padding: 16px; transition: all 0.3s ease; }
+    .col-title { font-weight: bold; font-size: 15px; margin-bottom: 10px; padding-bottom: 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; }
     
+    /* 【優化】發亮外框設計 (Active) vs 一般外框設計 (Inactive) */
+    .device-active { border: 2px solid #3b82f6; background: #f0f7ff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15); }
+    .device-active .col-title { color: #1e3a8a; border-bottom-color: #bfdbfe; }
+    
+    /* Inactive：保持正常亮度與顏色，不變暗、不變灰 */
+    .device-inactive { border: 2px solid #e2e8f0; background: #f8fafc; }
+    .device-inactive .col-title { color: #2d3748; border-bottom-color: #e2e8f0; }
+    
+    .current-badge { background: #3b82f6; color: #fff; font-size: 12px; padding: 4px 8px; border-radius: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); }
+
     .step-text { font-size: 13.5px; line-height: 1.6; margin-bottom: 10px; color: #4a5568; }
-    
     .ios-card { background: #fff; border: 1px solid #cbd5e0; border-radius: 6px; padding: 12px; margin-bottom: 10px; font-size: 13px; line-height: 1.6; color: #4a5568; }
     
-    /* 【修改】精準對齊的 Flex 排版 */
     .ios-step { display: flex; gap: 6px; align-items: flex-start; }
     .ios-step-num { font-weight: bold; color: #2d3748; font-size: 14px; flex-shrink: 0; }
     .ios-step-content { display: flex; flex-direction: column; }
@@ -170,16 +177,17 @@
       <div class="modal-body">
         <div class="modal-grid">
           
+          <!-- 上半部：電腦端 -->
           <div class="modal-col" id="colDesktop">
-            <div class="col-title">💻 電腦端</div>
+            <div class="col-title"><span>💻 電腦端</span><span id="badgeDesktop"></span></div>
             <div class="step-text">檔案將會 <b>自動存入「下載」資料夾</b>。</div>
           </div>
           
+          <!-- 下半部：手機端 -->
           <div class="modal-col" id="colMobile">
-            <div class="col-title">📱 手機 / 平板端</div>
+            <div class="col-title"><span>📱 手機 / 平板端</span><span id="badgeMobile"></span></div>
             <div class="step-text">將出現 <b>(1)</b> 或 <b>(2)</b> 兩種狀況：</div>
             
-            <!-- 【修改】(1) 順序對調與精準縮排 -->
             <div class="ios-card">
               <div class="ios-step">
                 <div class="ios-step-num">(1)</div>
@@ -190,7 +198,6 @@
               </div>
             </div>
 
-            <!-- 【修改】(2) 順序對調與精準縮排 -->
             <div class="ios-card">
               <div class="ios-step">
                 <div class="ios-step-num">(2)</div>
@@ -348,9 +355,29 @@
       globalWorkbook = null;
     }
 
-    /* ================= 修正動線：打開對話框 ================= */
+    /* ================= 開啟下載提示框 (加入動態高光提示) ================= */
     function showDownloadModal() {
-      // 已移除自動判斷裝置變暗的邏輯，單純打開 Modal
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const colDesk = document.getElementById('colDesktop');
+      const colMob = document.getElementById('colMobile');
+      const badgeDesk = document.getElementById('badgeDesktop');
+      const badgeMob = document.getElementById('badgeMobile');
+      
+      const badgeHTML = '<span class="current-badge">📍 您的裝置</span>';
+      badgeDesk.innerHTML = '';
+      badgeMob.innerHTML = '';
+      
+      // 【修改】只給目前的裝置加上邊框與徽章，但不變暗另一個裝置
+      if (isMobile) {
+        colMob.className = 'modal-col device-active';
+        colDesk.className = 'modal-col device-inactive';
+        badgeMob.innerHTML = badgeHTML;
+      } else {
+        colDesk.className = 'modal-col device-active';
+        colMob.className = 'modal-col device-inactive';
+        badgeDesk.innerHTML = badgeHTML;
+      }
+
       document.getElementById('downloadModal').style.display = 'flex';
     }
 
@@ -364,7 +391,7 @@
     function closeDownloadModal() {
       document.getElementById('downloadModal').style.display = 'none';
     }
-    /* ======================================================== */
+    /* ================================================================= */
 
     function getTimestamp() {
       const now = new Date();
