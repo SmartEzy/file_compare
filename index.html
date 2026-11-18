@@ -332,20 +332,36 @@
       return null;
     }
 
+    // 【核心新增】統一負責清除舊統計結果與暫存檔的函式
+    function clearPreviousResults() {
+      const logEl = document.getElementById('log');
+      logEl.style.display = 'none';
+      logEl.innerHTML = '';
+      globalWorkbook = null;
+      globalFileName = "";
+    }
+
     function removeFile(inputId, listId, indexToRemove) {
       accumulatedFiles[inputId].splice(indexToRemove, 1);
+      clearPreviousResults(); // 刪除單一檔案時，立刻清除下方舊的比對結果
       renderFileList(inputId, listId);
     }
 
     function updateFileList(inputId, listId) {
       const inputEl = document.getElementById(inputId);
       const newFiles = Array.from(inputEl.files);
+      if (newFiles.length === 0) return; // 若在手機選取視窗按「取消」，不做任何事
+
       let hasInvalid = false;
 
       newFiles.forEach(file => {
         const lowerName = file.name.toLowerCase();
         if (['.xls', '.xlsx', '.csv'].some(ext => lowerName.endsWith(ext))) {
-          if (!accumulatedFiles[inputId].some(f => f.name === file.name)) {
+          const existingIndex = accumulatedFiles[inputId].findIndex(f => f.name === file.name);
+          if (existingIndex !== -1) {
+            // 若選了同名檔案，更新為最新選取的檔案版本
+            accumulatedFiles[inputId][existingIndex] = file;
+          } else {
             accumulatedFiles[inputId].push(file);
           }
         } else {
@@ -353,21 +369,20 @@
         }
       });
 
-      // 清空 input 值，確保若把檔案移除後想馬上重選同一個檔案時，能正常觸發 onchange
       inputEl.value = '';
 
+      // 只要有重選或附加檔案，先清除舊的統計結果
+      clearPreviousResults();
+
       if (hasInvalid) {
-        document.getElementById('log').style.display = 'block';
-        document.getElementById('log').innerHTML = `<div class="status-msg error-msg">⚠️ 僅支援 .xls, .xlsx, .csv 檔案格式</div>`;
-      } else {
-        document.getElementById('log').style.display = 'none';
-        document.getElementById('log').innerHTML = '';
+        const logEl = document.getElementById('log');
+        logEl.style.display = 'block';
+        logEl.innerHTML = `<div class="status-msg error-msg">⚠️ 僅支援 .xls, .xlsx, .csv 檔案格式</div>`;
       }
 
       renderFileList(inputId, listId);
     }
 
-    // 【修正 1 & 2】統一檢查 Step 1、Step 2 與執行按鈕的顯示狀態及文字重置
     function syncStepsVisibility() {
       const hasCase = accumulatedFiles['caseFiles'].length > 0;
       const hasReturn = accumulatedFiles['returnFiles'].length > 0;
@@ -401,8 +416,6 @@
       const inputEl = document.getElementById(inputId);
       const listEl = document.getElementById(listId);
       const dropZone = inputEl.closest('.drop-zone');
-
-      globalWorkbook = null;
 
       const validFiles = accumulatedFiles[inputId];
 
@@ -476,15 +489,14 @@
       document.getElementById('caseFileList').innerHTML = '';
       document.getElementById('returnFileList').style.display = 'none';
       document.getElementById('returnFileList').innerHTML = '';
-      document.getElementById('log').style.display = 'none';
-      document.getElementById('log').innerHTML = '';
+      
+      clearPreviousResults();
       
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.innerText = '執行比對資料';
       submitBtn.disabled = false;
       submitBtn.style.display = 'none';
       document.getElementById('step2Card').style.display = 'none';
-      globalWorkbook = null;
     }
 
     function showDownloadModal() {
@@ -542,11 +554,9 @@
         return;
       }
 
-      // 【修正 1】只改變按鈕文字，不再於下方重複顯示多餘的處理中區塊
       btn.disabled = true;
       btn.innerText = "⏳ 資料比對處理中...";
-      logEl.style.display = 'none';
-      logEl.innerHTML = '';
+      clearPreviousResults();
 
       if (typeof XLSX === 'undefined') {
         btn.disabled = false;
@@ -657,7 +667,6 @@
         globalWorkbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(globalWorkbook, outSheet, "未回診名單");
 
-        // 比對完成後隱藏按鈕，並把按鈕文字還原備用
         btn.style.display = 'none';
         btn.disabled = false;
         btn.innerText = '執行比對資料';
