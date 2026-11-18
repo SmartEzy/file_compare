@@ -289,11 +289,29 @@
       'returnFiles': []
     };
 
-    ['caseZone', 'returnZone'].forEach(zoneId => {
+    // 【核心新增】全域攔截：防止手滑把檔案拖曳到上傳框外時，瀏覽器自動觸發下載或開啟檔案
+    window.addEventListener('dragover', e => e.preventDefault(), false);
+    window.addEventListener('drop', e => e.preventDefault(), false);
+
+    // 綁定上傳框的拖曳與放開事件
+    [
+      { zoneId: 'caseZone', inputId: 'caseFiles', listId: 'caseFileList' },
+      { zoneId: 'returnZone', inputId: 'returnFiles', listId: 'returnFileList' }
+    ].forEach(({ zoneId, inputId, listId }) => {
       const zone = document.getElementById(zoneId);
-      zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+      zone.addEventListener('dragover', e => { 
+        e.preventDefault(); 
+        zone.classList.add('dragover'); 
+      });
       zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
-      zone.addEventListener('drop', () => zone.classList.remove('dragover'));
+      zone.addEventListener('drop', e => { 
+        e.preventDefault();
+        zone.classList.remove('dragover'); 
+        // 若直接拖曳檔案進框內，確保能透過 dataTransfer 正常讀取並累加
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          handleIncomingFiles(inputId, listId, Array.from(e.dataTransfer.files));
+        }
+      });
     });
 
     function readExcel(file) {
@@ -332,7 +350,6 @@
       return null;
     }
 
-    // 【核心新增】統一負責清除舊統計結果與暫存檔的函式
     function clearPreviousResults() {
       const logEl = document.getElementById('log');
       logEl.style.display = 'none';
@@ -343,14 +360,19 @@
 
     function removeFile(inputId, listId, indexToRemove) {
       accumulatedFiles[inputId].splice(indexToRemove, 1);
-      clearPreviousResults(); // 刪除單一檔案時，立刻清除下方舊的比對結果
+      clearPreviousResults();
       renderFileList(inputId, listId);
     }
 
     function updateFileList(inputId, listId) {
       const inputEl = document.getElementById(inputId);
       const newFiles = Array.from(inputEl.files);
-      if (newFiles.length === 0) return; // 若在手機選取視窗按「取消」，不做任何事
+      inputEl.value = '';
+      handleIncomingFiles(inputId, listId, newFiles);
+    }
+
+    function handleIncomingFiles(inputId, listId, newFiles) {
+      if (newFiles.length === 0) return;
 
       let hasInvalid = false;
 
@@ -359,7 +381,6 @@
         if (['.xls', '.xlsx', '.csv'].some(ext => lowerName.endsWith(ext))) {
           const existingIndex = accumulatedFiles[inputId].findIndex(f => f.name === file.name);
           if (existingIndex !== -1) {
-            // 若選了同名檔案，更新為最新選取的檔案版本
             accumulatedFiles[inputId][existingIndex] = file;
           } else {
             accumulatedFiles[inputId].push(file);
@@ -369,9 +390,6 @@
         }
       });
 
-      inputEl.value = '';
-
-      // 只要有重選或附加檔案，先清除舊的統計結果
       clearPreviousResults();
 
       if (hasInvalid) {
@@ -429,7 +447,7 @@
       }
       
       dropZone.classList.add('has-files');
-      dropZone.querySelector('.drop-hint').innerHTML = `已選擇 ${validFiles.length} 個檔案<br><span class="desktop-hint">（點擊可繼續附加檔案）</span>`;
+      dropZone.querySelector('.drop-hint').innerHTML = `已選擇 ${validFiles.length} 個檔案<br><span class="desktop-hint">（點擊或拖曳可繼續附加檔案）</span>`;
       
       listEl.style.display = 'flex';
       listEl.innerHTML = validFiles.map((f, index) => `
