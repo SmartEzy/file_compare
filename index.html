@@ -33,12 +33,11 @@
     .file-list { margin-top: 12px; display: none; flex-direction: column; gap: 8px; }
     .file-badge { background: #f1f5f9; border-left: 4px solid #3b82f6; padding: 10px 12px; border-radius: 6px; font-size: 13.5px; color: #1e293b; font-weight: bold; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     .file-info { display: flex; align-items: center; gap: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .file-preview-count { font-size: 12px; color: #64748b; font-weight: normal; flex-shrink: 0; }
+    .file-preview-count { font-size: 12.5px; color: #475569; font-weight: normal; flex-shrink: 0; }
 
     #submitBtn { background: #2b6cb0; color: #fff; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; transition: all 0.25s ease; }
     #submitBtn:hover { background: #2c5282; }
     
-    /* 獨立的大型下載按鈕 */
     .download-action-btn { background: #2f855a; color: #fff; border: none; padding: 16px 24px; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; width: 100%; margin-top: 15px; box-shadow: 0 4px 6px rgba(47, 133, 90, 0.2); transition: all 0.2s ease; animation: pop 0.4s ease; }
     .download-action-btn:hover { background: #276749; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(47, 133, 90, 0.3); }
 
@@ -48,7 +47,7 @@
     .status-msg { padding: 14px 16px; border-radius: 6px; background: #edf2f7; font-size: 14.5px; line-height: 1.6; margin-bottom: 15px; }
     .error-msg { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
     
-    .result-title { font-weight: bold; color: #2f855a; margin-bottom: 10px; font-size: 15px; }
+    .result-title { font-weight: bold; color: #2f855a; margin-bottom: 10px; font-size: 15px; display: flex; align-items: center; gap: 6px; }
     .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; }
     .summary-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 450px; font-size: 14px; }
     .summary-table th, .summary-table td { border: 1px solid #e2e8f0; padding: 11px 12px; text-align: center; vertical-align: middle; }
@@ -72,7 +71,7 @@
     .missing-banner .title { font-weight: bold; color: #9b2c2c; font-size: 16px; }
     .missing-banner .count { font-weight: bold; color: #c53030; font-size: 22px; }
 
-    /* ================= 明亮高對比：確認對話框 ================= */
+    /* ================= 彈出式對話框 - 明亮高對比模式 ================= */
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.65); z-index: 9999; justify-content: center; align-items: center;
@@ -162,7 +161,7 @@
     <div id="log"></div>
   </div>
 
-  <!-- 下載提示對話框 (現在改為按下下載時才出現) -->
+  <!-- 下載提示對話框 (按下下載時才出現) -->
   <div class="modal-overlay" id="downloadModal">
     <div class="modal-box">
       <div class="modal-header">💡 檔案已開始下載！請注意儲存位置</div>
@@ -214,7 +213,42 @@
       zone.addEventListener('drop', () => zone.classList.remove('dragover'));
     });
 
-    // 【新增功能】：非同步讀取檔案，立刻顯示筆數預覽
+    // 讀取 Excel 核心函數
+    function readExcel(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array', raw: false });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+            resolve({ name: file.name, rows });
+          } catch (err) {
+            reject(new Error(`解析檔案失敗`));
+          }
+        };
+        reader.onerror = () => reject(new Error(`讀取檔案失敗`));
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    // 偵測身分證欄位函數
+    function detectIdColumn(rows) {
+      for (let r = 0; r < Math.min(15, rows.length); r++) {
+        const row = rows[r];
+        if (!row) continue;
+        for (let c = 0; c < row.length; c++) {
+          const cellText = String(row[c] || "").replace(/\s+/g, "");
+          if (cellText.includes("身份証") || cellText.includes("身份證") || cellText.includes("身分證") || cellText.includes("身分証")) {
+            return { headerRowIndex: r, idCol: c };
+          }
+        }
+      }
+      return null;
+    }
+
+    // 【修改點】利用 detectIdColumn 進行精準計數的非同步函數
     async function updateFileList(inputId, listId) {
       const inputEl = document.getElementById(inputId);
       const listEl = document.getElementById(listId);
@@ -254,7 +288,6 @@
         return;
       }
       
-      // 先產生介面，顯示「計算中...」
       listEl.style.display = 'flex';
       listEl.innerHTML = validFiles.map((f, index) => `
         <div class="file-badge">
@@ -263,15 +296,26 @@
         </div>
       `).join('');
 
-      // 背景偷偷解析每個檔案並更新筆數
+      // 【精準計數邏輯】解析檔案，扣除上方標題與無身分證的空白列
       for (let i = 0; i < validFiles.length; i++) {
         try {
           const data = await readExcel(validFiles[i]);
-          // 簡易計算總列數 (扣除標題大約估算)
-          const rowCount = Math.max(0, data.rows.length - 1);
-          document.getElementById(`${inputId}-count-${i}`).innerHTML = `約 <b>${rowCount}</b> 筆`;
+          const meta = detectIdColumn(data.rows);
+          let exactCount = 0;
+          
+          if (meta) {
+            for (let r = meta.headerRowIndex + 1; r < data.rows.length; r++) {
+              const row = data.rows[r];
+              if (!row) continue;
+              const idNo = String(row[meta.idCol] || "").trim();
+              if (idNo) exactCount++;
+            }
+            document.getElementById(`${inputId}-count-${i}`).innerHTML = `<b>${exactCount}</b> 筆`;
+          } else {
+            document.getElementById(`${inputId}-count-${i}`).innerHTML = `<span style="color:#c53030">格式不符</span>`;
+          }
         } catch(e) {
-          document.getElementById(`${inputId}-count-${i}`).innerHTML = `格式未確認`;
+          document.getElementById(`${inputId}-count-${i}`).innerHTML = `讀取失敗`;
         }
       }
     }
@@ -292,10 +336,8 @@
     /* ================= 觸發下載與對話框控制 ================= */
     function executeDownload() {
       if (globalWorkbook && globalFileName) {
-        // 執行下載
         XLSX.writeFile(globalWorkbook, globalFileName);
         
-        // 裝置動態高光設定
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         const colDesk = document.getElementById('colDesktop');
         const colMob = document.getElementById('colMobile');
@@ -316,47 +358,12 @@
           badgeDesk.innerHTML = badgeHTML;
         }
 
-        // 彈出指導對話框
         document.getElementById('downloadModal').style.display = 'flex';
       }
     }
 
     function closeDownloadModal() {
       document.getElementById('downloadModal').style.display = 'none';
-    }
-    /* ======================================================== */
-
-    function readExcel(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array', raw: false });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-            resolve({ name: file.name, rows });
-          } catch (err) {
-            reject(new Error(`解析檔案失敗`));
-          }
-        };
-        reader.onerror = () => reject(new Error(`讀取檔案失敗`));
-        reader.readAsArrayBuffer(file);
-      });
-    }
-
-    function detectIdColumn(rows) {
-      for (let r = 0; r < Math.min(15, rows.length); r++) {
-        const row = rows[r];
-        if (!row) continue;
-        for (let c = 0; c < row.length; c++) {
-          const cellText = String(row[c] || "").replace(/\s+/g, "");
-          if (cellText.includes("身份証") || cellText.includes("身份證") || cellText.includes("身分證") || cellText.includes("身分証")) {
-            return { headerRowIndex: r, idCol: c };
-          }
-        }
-      }
-      return null;
     }
 
     function getTimestamp() {
@@ -485,13 +492,11 @@
           }
         }
 
-        // 儲存至全域變數，等待點擊按鈕時下載
         globalFileName = `未回診名單_${getTimestamp()}.xlsx`;
         const outSheet = XLSX.utils.aoa_to_sheet([headerRow, ...missingCases]);
         globalWorkbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(globalWorkbook, outSheet, "未回診名單");
 
-        // 隱藏原始按鈕，呈現結果與獨立下載按鈕
         btn.style.display = 'none';
 
         logEl.innerHTML = `
@@ -527,7 +532,6 @@
             <span class="count">${missingCases.length} 人</span>
           </div>
           
-          <!-- 【新增】將下載動作獨立為超顯眼的按鈕 -->
           <button class="download-action-btn" onclick="executeDownload()">
             📥 點擊下載「未回診名單」 (${missingCases.length} 人)
           </button>
